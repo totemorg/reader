@@ -1,0 +1,36 @@
+{
+  "name": "reader",
+  "version": "1.0.0",
+  "description": "read and natural-language-parse documents of all kinds",
+  "main": "reader.js",
+  "dependencies": {
+    "jsdom": "^7.2.2",
+    "lda": "^0.1.6",
+    "natural": "^0.2.1",
+    "node-xlsx": "^0.6.0",
+    "pdf2json": "^0.7.1",
+    "teacher": "^0.0.1",
+    "unoconv": "^0.1.2",
+    "xml2js": "^0.4.16",
+    "yql": "^1.0.2"
+  },
+  "devDependencies": {},
+  "scripts": {
+    "test": "node test.js"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git@git.geointapps.org:geonode-dev-team/reader.git"
+  },
+  "keywords": [
+    "nlp",
+    "logist",
+    "regression",
+    "nlp",
+    "pdf",
+    "office",
+    "documents"
+  ],
+  "author": "brian.d.james@NGA Research",
+  "license": "ISC"
+}
