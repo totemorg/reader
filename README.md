@@ -1,4 +1,4 @@
-# Totem GRACEFUL-LWIP
+# Totem READER
 
 [![Forked from SourceForge](https://sourceforge.net)]
 
@@ -158,7 +158,7 @@ using [NLP training rules](/admins.view), then reflected into the [file stores](
  
 ## Installation
 
-Download and unzip into your project/totem folder and revise the project/config module as needed
+Download and unzip into your project/reader folder and revise the project/config module as needed
 for your [Totem](https://git.geointapps.org/acmesds/transfer) project.  Typically, you will
 want to:
 
