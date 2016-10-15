@@ -15,8 +15,6 @@
  * @requires yql
  * @requires natural
  * @requires teacher
- * @requires evlog
- * @requires swag
  */
 /**
 	Readers are builtin [engines](/engines.view) that automatically index a variety of 
