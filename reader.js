@@ -16,157 +16,6 @@
  * @requires natural
  * @requires teacher
  */
-/**
-	Readers are builtin [engines](/engines.view) that automatically index a variety of 
-	document, graphics, presentation, and spreadsheet files when uploaded into
-	**#{nick}**.  Ingested text is checked for readibility, indexed to the best
-	using [NLP training rules](/admins.view), then reflected into the [file stores](/files.view).
-
-		WEB files:
-			html	- Web site
-			rss	- News feed
-			idop	- NTM imagery
-				
-		Document.Files
-			bib      - BibTeX [.bib]
-			doc      - Microsoft Word 97/2000/XP [.doc]
-			doc6     - Microsoft Word 6.0 [.doc]
-			doc95    - Microsoft Word 95 [.doc]
-			docbook  - DocBook [.xml]
-			docx     - Microsoft Office Open XML [.docx]
-			docx7    - Microsoft Office Open XML [.docx]
-			fodt     - OpenDocument Text (Flat XML) [.fodt]
-			html     - HTML Document (OpenOffice.org Writer) [.html]
-			latex    - LaTeX 2e [.ltx]
-			mediawiki - MediaWiki [.txt]
-			odt      - ODF Text Document [.odt]
-			ooxml    - Microsoft Office Open XML [.xml]
-			ott      - Open Document Text [.ott]
-			pdb      - AportisDoc (Palm) [.pdb]
-			pdf      - Portable Document Format [.pdf]
-			psw      - Pocket Word [.psw]
-			rtf      - Rich Text Format [.rtf]
-			sdw      - StarWriter 5.0 [.sdw]
-			sdw4     - StarWriter 4.0 [.sdw]
-			sdw3     - StarWriter 3.0 [.sdw]
-			stw      - Open Office.org 1.0 Text Document Template [.stw]
-			sxw      - Open Office.org 1.0 Text Document [.sxw]
-			text     - Text Encoded [.txt]
-			txt      - Text [.txt]
-			uot      - Unified Office Format text [.uot]
-			vor      - StarWriter 5.0 Template [.vor]
-			vor4     - StarWriter 4.0 Template [.vor]
-			vor3     - StarWriter 3.0 Template [.vor]
-			xhtml    - XHTML Document [.html]
-
-		Graphics.Files
-			bmp      - Windows Bitmap [.bmp]
-			emf      - Enhanced Metafile [.emf]
-			eps      - Encapsulated PostScript [.eps]
-			fodg     - OpenDocument Drawing (Flat XML) [.fodg]
-			gif      - Graphics Interchange Format [.gif]
-			html     - HTML Document (OpenOffice.org Draw) [.html]
-			jpg      - Joint Photographic Experts Group [.jpg]
-			met      - OS/2 Metafile [.met]
-			odd      - OpenDocument Drawing [.odd]
-			otg      - OpenDocument Drawing Template [.otg]
-			pbm      - Portable Bitmap [.pbm]
-			pct      - Mac Pict [.pct]
-			pdf      - Portable Document Format [.pdf]
-			pgm      - Portable Graymap [.pgm]
-			png      - Portable Network Graphic [.png]
-			ppm      - Portable Pixelmap [.ppm]
-			ras      - Sun Raster Image [.ras]
-			std      - OpenOffice.org 1.0 Drawing Template [.std]
-			svg      - Scalable Vector Graphics [.svg]
-			svm      - StarView Metafile [.svm]
-			swf      - Macromedia Flash (SWF) [.swf]
-			sxd      - OpenOffice.org 1.0 Drawing [.sxd]
-			sxd3     - StarDraw 3.0 [.sxd]
-			sxd5     - StarDraw 5.0 [.sxd]
-			sxw      - StarOffice XML (Draw) [.sxw]
-			tiff     - Tagged Image File Format [.tiff]
-			vor      - StarDraw 5.0 Template [.vor]
-			vor3     - StarDraw 3.0 Template [.vor]
-			wmf      - Windows Metafile [.wmf]
-			xhtml    - XHTML [.xhtml]
-			xpm      - X PixMap [.xpm]
-
-		Presentation.Files
-			bmp      - Windows Bitmap [.bmp]
-			emf      - Enhanced Metafile [.emf]
-			eps      - Encapsulated PostScript [.eps]
-			fodp     - OpenDocument Presentation (Flat XML) [.fodp]
-			gif      - Graphics Interchange Format [.gif]
-			html     - HTML Document (OpenOffice.org Impress) [.html]
-			jpg      - Joint Photographic Experts Group [.jpg]
-			met      - OS/2 Metafile [.met]
-			odg      - ODF Drawing (Impress) [.odg]
-			odp      - ODF Presentation [.odp]
-			otp      - ODF Presentation Template [.otp]
-			pbm      - Portable Bitmap [.pbm]
-			pct      - Mac Pict [.pct]
-			pdf      - Portable Document Format [.pdf]
-			pgm      - Portable Graymap [.pgm]
-			png      - Portable Network Graphic [.png]
-			potm     - Microsoft PowerPoint 2007/2010 XML Template [.potm]
-			pot      - Microsoft PowerPoint 97/2000/XP Template [.pot]
-			ppm      - Portable Pixelmap [.ppm]
-			pptx     - Microsoft PowerPoint 2007/2010 XML [.pptx]
-			pps      - Microsoft PowerPoint 97/2000/XP (Autoplay) [.pps]
-			ppt      - Microsoft PowerPoint 97/2000/XP [.ppt]
-			pwp      - PlaceWare [.pwp]
-			ras      - Sun Raster Image [.ras]
-			sda      - StarDraw 5.0 (OpenOffice.org Impress) [.sda]
-			sdd      - StarImpress 5.0 [.sdd]
-			sdd3     - StarDraw 3.0 (OpenOffice.org Impress) [.sdd]
-			sdd4     - StarImpress 4.0 [.sdd]
-			sxd      - OpenOffice.org 1.0 Drawing (OpenOffice.org Impress) [.sxd]
-			sti      - OpenOffice.org 1.0 Presentation Template [.sti]
-			svg      - Scalable Vector Graphics [.svg]
-			svm      - StarView Metafile [.svm]
-			swf      - Macromedia Flash (SWF) [.swf]
-			sxi      - OpenOffice.org 1.0 Presentation [.sxi]
-			tiff     - Tagged Image File Format [.tiff]
-			uop      - Unified Office Format presentation [.uop]
-			vor      - StarImpress 5.0 Template [.vor]
-			vor3     - StarDraw 3.0 Template (OpenOffice.org Impress) [.vor]
-			vor4     - StarImpress 4.0 Template [.vor]
-			vor5     - StarDraw 5.0 Template (OpenOffice.org Impress) [.vor]
-			wmf      - Windows Metafile [.wmf]
-			xhtml    - XHTML [.xml]
-			xpm      - X PixMap [.xpm]
-
-		Spreadsheet.Files
-			csv      - Text CSV [.csv]
-			dbf      - dBASE [.dbf]
-			dif      - Data Interchange Format [.dif]
-			fods     - OpenDocument Spreadsheet (Flat XML) [.fods]
-			html     - HTML Document (OpenOffice.org Calc) [.html]
-			ods      - ODF Spreadsheet [.ods]
-			ooxml    - Microsoft Excel 2003 XML [.xml]
-			ots      - ODF Spreadsheet Template [.ots]
-			pdf      - Portable Document Format [.pdf]
-			pxl      - Pocket Excel [.pxl]
-			sdc      - StarCalc 5.0 [.sdc]
-			sdc4     - StarCalc 4.0 [.sdc]
-			sdc3     - StarCalc 3.0 [.sdc]
-			slk      - SYLK [.slk]
-			stc      - OpenOffice.org 1.0 Spreadsheet Template [.stc]
-			sxc      - OpenOffice.org 1.0 Spreadsheet [.sxc]
-			uos      - Unified Office Format spreadsheet [.uos]
-			vor3     - StarCalc 3.0 Template [.vor]
-			vor4     - StarCalc 4.0 Template [.vor]
-			vor      - StarCalc 5.0 Template [.vor]
-			xhtml    - XHTML [.xhtml]
-			xls      - Microsoft Excel 97/2000/XP [.xls]
-			xls5     - Microsoft Excel 5.0 [.xls]
-			xls95    - Microsoft Excel 95 [.xls]
-			xlt      - Microsoft Excel 97/2000/XP Template [.xlt]
-			xlt5     - Microsoft Excel 5.0 Template [.xlt]
-			xlt95    - Microsoft Excel 95 Template [.xlt]
- 
-*/
 
 var 										// Interface
 	ENV = process.env,
@@ -178,15 +27,17 @@ var  										// external Bindings
 	JSDOM = require('jsdom'),				// Web site crawler	
 	//XMLP = require("htmlparser"),			// HTML parser
 	//OO = require('office'),				// Open Office parser
+	XML2JS = require('xml2js'), 	// XML2JS reader	
 	PDFP = require('pdf2json/pdfparser'), 	// PDF parser
 	YQL = require('yql'),					// Cooperating site scrapper
 	NLP = require('natural'),				// Natural Language Parsing (Bayes or Logireg)
 	LDA = require('lda'), 					// NLP (via Latent Dirichlet Allocation)
 	SPELL = require('teacher'),				// Spell checker 
+	XML2JS = require("xml2js"),					//< xml to json parser 	
 	UNO = require('unoconv'); 				// File converter/reader
 
-var 										// geonode bindings
-	RDR = module.exports = require("enum").config({
+var 										// totem bindings
+	READ = module.exports = {
 		idop	: idop_Reader,
 		xlsx	: xlsx_Reader,	
 		text	: txt_Reader,	
@@ -204,7 +55,7 @@ var 										// geonode bindings
 		db		: db_Reader,
 		jade	: jade_Reader,
 		config	: config_Reader,
-		job		: job_Reader,
+		reader	: Reader,
 		enabled : true,
 		trace 	: false,
 		classif	: ENV.READER		// Use Bayes classifier.  Logireg also possible.  LDA not support
@@ -218,104 +69,111 @@ var 										// geonode bindings
 			"suggestion": 1,
 			"grammar": 2
 		}
-	});
+	};
 
-var
-	geoCHIP = require('geochip'), 			// IDOP workflow chipper+detector
-	FS = geoCHIP.FS, //require('fs'),			// File system
-	XML2JS = geoCHIP.XML2JS; //require('xml2js'), 	// XML2JS reader	
-	//EVENT = require('geonode/evlog'), 	// Event logger
-	//BASE = require('geonode/base'); 		// Base methods and prototypes
+var 								// nodejs bindings
+	FS = require('fs');			// File system
+
+var 
+	ENUM = require("enum").extend({
+		String: [
+			function cleaner() {	
+				return this
+						.toUpperCase()
+						.replace(/\t/gm,"")
+						.replace(/^#*/gm,"")
+						.replace(/\n/gm," ")
+						.replace(/<BR>/g," ")
+						.replace(/\&NBSP;/g," ")
+						.replace(/,/g,".")
+						.replace(/:/g,".")
+						.replace(/;/g,".")
+						.replace(/ AND /g,".")
+						.replace(/ OR /g,".")
+						.replace(/ THEN /g,".")
+						.replace(/ IF /g,".")
+						.replace(/ BECAUSE /g,".")
+						.replace(/ WHEN /g,".")
+						.replace(/  /g," ");
+			},
+
+			function splitter() {
+				return this.match( /[^\.!\?]+[\.!\?]+/g );
+			},
+
+			function indexor(score,cb) {
+				var rubric = READ.spellRubric,
+					classify = READ.classif,
+					text = this+"";
+
+				if (text.length > READ.minTextLen)
+					SPELL.check( text, function (err,checks) {
+
+						if (!checks || err) checks = [];
+
+						READ.each(checks, function (n,check) {
+							score.Readability -= rubric[check.type];
+						});
+
+						//console.log([text, score.Readability, READ.minReadability]);
+
+						if (score.Readability > READ.minReadability)
+							text.splitter().each( function (n,frag) {
+								//console.log([n,frag]);
+
+								if (frag) 								// discard empties
+									if (frag.indexOf("<") < 0) 			// discard html (yes - a stupid filter)
+										classify.getClassifications(frag).each( function (m,idx) {
+											//console.log([frag,idx.value,idx.label,READ.minRelevance]);
+											if (idx.value > READ.minRelevance) 		// discard irrelevant
+												score[idx.label] += idx.value;
+										});
+							});
+
+						cb();
+					});
+			}
+		]			
+	}),
+	CHIP = require('chipper'); 			// IDOP workflow chipper+detector
+
+var  			// globals
+	Copy = ENUM.copy,
+	Each = ENUM.each;
 
 function config_Reader (sql) {
-	sql.query('SELECT * FROM nlprules WHERE Enabled')
+	sql.query('SELECT * FROM app1.nlprules WHERE Enabled')
 	.on('error', function (err) {
 		console.info('Cant get NLP rule - '+err);
 	})
 	.on('result', function (rule) {
-		RDR.classif.addDocument(rule.Usecase.toUpperCase(), rule.Index);
+		READ.classif.addDocument(rule.Usecase.toUpperCase(), rule.Index);
 	})
 	.on('end', function () {
-		RDR.classif.train();
+		READ.classif.train();
 		
-		if (RDR.trace) {
+		if (READ.trace) {
 			var Trials = [
 				'Windows 64 bit is a fine Operating System',
 				'i would like a circular polarized beam please',
 				'this algorithm is still highly experimental',
 				'i need more hyperspectral data'];
 			
-			RDR.each(Trials, function (n,trial) {
+			READ.each(Trials, function (n,trial) {
 				console.info(trial+" -> ");
-				console.log(RDR.classif.getClassifications(trial));
+				console.log(READ.classif.getClassifications(trial));
 			});
 		}
 		
-		RDR.idxs = RDR.classif.getClassifications("test");
+		READ.idxs = READ.classif.getClassifications("test");
+		console.log(READ.idxs);
 		
 		if(ENV.READER)
-			RDR.classif.save(ENV.READER, function(err, classifier) {
+			READ.classif.save(ENV.READER, function(err, classifier) {
 				if (err) 
 				console.info('Cant save NLP trainging state - '+err);
 			});			
 	});
-}
-
-String.prototype.cleaner = function () {	
-	return this
-			.toUpperCase()
-			.replace(/\t/gm,"")
-			.replace(/^#*/gm,"")
-			.replace(/\n/gm," ")
-			.replace(/<BR>/g," ")
-			.replace(/\&NBSP;/g," ")
-			.replace(/,/g,".")
-			.replace(/:/g,".")
-			.replace(/;/g,".")
-			.replace(/ AND /g,".")
-			.replace(/ OR /g,".")
-			.replace(/ THEN /g,".")
-			.replace(/ IF /g,".")
-			.replace(/ BECAUSE /g,".")
-			.replace(/ WHEN /g,".")
-			.replace(/  /g," ");
-}
-
-String.prototype.splitter = function () {
-	return this.match( /[^\.!\?]+[\.!\?]+/g );
-}
-
-String.prototype.indexor = function (score,cb) {
-	var rubric = RDR.spellRubric,
-		classify = RDR.classif,
-		text = this+"";
-	
-	if (text.length > RDR.minTextLen)
-		SPELL.check( text, function (err,checks) {
-		
-			if (!checks || err) checks = [];
-
-			RDR.each(checks, function (n,check) {
-				score.Readability -= rubric[check.type];
-			});
-
-			//console.log([text, score.Readability, RDR.minReadability]);
-			
-			if (score.Readability > RDR.minReadability)
-				text.splitter().each( function (n,frag) {
-					//console.log([n,frag]);
-					
-					if (frag) 								// discard empties
-						if (frag.indexOf("<") < 0) 			// discard html (yes - a stupid filter)
-							classify.getClassifications(frag).each( function (m,idx) {
-								//console.log([frag,idx.value,idx.label,RDR.minRelevance]);
-								if (idx.value > RDR.minRelevance) 		// discard irrelevant
-									score[idx.label] += idx.value;
-							});
-				});
-			
-			cb();
-		});
 }
 
 function db_Reader(sql,path,cb) {
@@ -397,9 +255,9 @@ function oos_Reader(sql,path,cb) {
 		FS.readFile(ENV.PUBLIC+"tmp/"+path, 'utf-8', function (err,data) {
 			XML2JS.parseString(data, function (err,json) {
 //console.log(json);
-				RDR.each(json["Workbook"]["ss:Worksheet"], function (n,sheet) {
+				READ.each(json["Workbook"]["ss:Worksheet"], function (n,sheet) {
 console.log(sheet);
-				RDR.each(sheet["Table"], function (n,table) {
+				READ.each(sheet["Table"], function (n,table) {
 					if (n==0) {
 console.log(table);
 						var col = table.Column, row = table.Row;
@@ -455,10 +313,10 @@ function ood_Reader(sql,path,cb) {
 		UNO.convert(path, "ooxml", {output:ENV.PUBLIC+"tmp/"+path}, function (err,data) {
 			FS.readFile(ENV.PUBLIC+"tmp/"+path, 'utf-8', function (err,data) {
 				XML2JS.parseString(data, function (err,json) {
-					RDR.each(json["w:wordDocument"]["w:body"], function (n,body) {
-					RDR.each(body["w:p"], function (n,para) {
-					RDR.each(para["w:r"], function (n,recd) {
-					RDR.each(recd["w:t"], function (n,text) {
+					READ.each(json["w:wordDocument"]["w:body"], function (n,body) {
+					READ.each(body["w:p"], function (n,para) {
+					READ.each(para["w:r"], function (n,recd) {
+					READ.each(recd["w:t"], function (n,text) {
 						cb({Text: text});
 					}); }); }); });
 				});					
@@ -475,17 +333,21 @@ function xml_Reader(sql,path,cb) {
 }
 
 function pdf_Reader(sql,path,cb) {
+	console.log("pdfrdr");
+				
 	var PDF = new PDFP();
 						
 	PDF
 	.on("pdfParser_dataReady", function(evtData) {
+		console.log(evtData);
+		
 		if ((!!evtData) && (!!evtData.data))  {
 			var npages=evtData.data.Pages.length;
 			var text = "";
 
-			RDR.each(evtData.data.Pages, function (pn,page) {
-				RDR.each(page.Texts, function (tn,txt) {
-					RDR.each(txt.R, function (rn,report) {
+			Each(evtData.data.Pages, function (pn,page) {
+				Each(page.Texts, function (tn,txt) {
+					Each(txt.R, function (rn,report) {
 						text += unescape(report.T)+" ";
 					});
 				});
@@ -500,7 +362,9 @@ function pdf_Reader(sql,path,cb) {
 		console.log("PDF ERROR "+evtData.data);
 	});
 	
-	PDF.loadPDF(path);
+	console.log("pdf="+path);
+	console.log(PDF.loadPDF);
+	//PDF.loadPDF(path);
 }
 
 function html_Reader(sql,path,cb) {
@@ -666,7 +530,7 @@ function yql_Reader(sql,path,cb) {
 
 	new YQL.exec(query, function (recs) {
 		console.info(recs);
-		RDR.each( recs, function (n,rec) {
+		READ.each( recs, function (n,rec) {
 			cb(rec);
 		});
 	});
@@ -686,41 +550,32 @@ function idop_Reader(sql,path,cb) {
 			outfile: ""
 		};
 		
-	geoCHIP.workflow(sql, parms, function (chip,dets) {
+	CHIP.workflow(sql, parms, function (chip,dets) {
 		cb(dets);
 	});
 }
 
-function job_Reader(sql,job,area,cb) {
+function Reader(sql,path,cb) {
+	console.log("reader");
 	
-	var parts = job.split(DOT),
-		type = parts[1] || "",
-		reader = RDR[type],
-		parts = job.split(SLASH),
-		name = parts[parts.length-1] || "",
-		path = ENV[area.toUpperCase()]+name,
-		file = {
-			Area: area,
-			Tag: "upload",
-			Name: name,
-			Added: new Date(),
+	var parts = path.split("."),
+		type = parts.pop(),
+		keys = {
 			Classif: "(U)",
-			Enabled: 0,
 			Readability: 100
 		};
 
-	RDR.idxs.each(function (n,idx) {
-		file[idx.label] = 0;
+	Each(READ.idxs, function (n,idx) {
+		keys[idx.label] = 0;
 	});
 	
-	pdf_Reader(sql,path, function (text) {
-		text.indexor(file, function () {
-			sql.query("INSERT INTO files SET ? ON DUPLICATE KEY UPDATE ?",[file,file], function (err) {
-				file.err = err;
-				if (cb) cb(file);
-			});
+	if (read = READ[type])
+		read(sql, path, function (text) {
+			console.log("text="+text);
+			/*text.indexor(keys, function () {
+				if (cb) cb(keys);
+			});*/
 		});
-	});
 	
 }
 	
