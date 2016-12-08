@@ -2,10 +2,9 @@
 
 [![Forked from SourceForge](https://sourceforge.net)]
 
-[Totem](https://git.geointapps.org/acmesds/transfer)'s READER module provide engines
-to read and index a variety of document, graphics, presentation, and spreadsheet files 
-uploaded into Totem,  Ingested text is checked for readibility, indexed to the best
-using [NLP training rules](/admins.view), then reflected into the [file stores](/files.view).
+READER will index (parse, scrape, etc) a variety of document, graphics, presentation, and spreadsheet files 
+that were uploaded into Totem,  Ingested text is checked for readibility, indexed to the best using 
+[NLP training rules](/admins.view), then reflected into the [file stores](/files.view).
 
 + WEB files
 
@@ -158,15 +157,9 @@ using [NLP training rules](/admins.view), then reflected into the [file stores](
 
 ## Installation
 
-Download and unzip into your project/reader folder and revise the project/config module as needed
-for your [Totem](https://git.geointapps.org/acmesds/transfer) project.  Typically, you will
-want to:
+Download the latest version with
 
-	ln -s ../config/debe.sh config.sh
-	ln -s ../config/maint.sh maint.sh
-	ln -s ../config/certs certs
-	
-to override the defaults.
+	git clone https://git.geointapps.org/acmesds/reader
 
 ## Usage
 
