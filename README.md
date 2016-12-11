@@ -1,6 +1,6 @@
 # Totem READER
 
-[![Forked from SourceForge](https://sourceforge.net)]
+@class READER [![Forked from SourceForge](https://sourceforge.net)]
 
 READER will index (parse, scrape, etc) a variety of document, graphics, presentation, and spreadsheet files 
 that were uploaded into Totem,  Ingested text is checked for readibility, indexed to the best using 
