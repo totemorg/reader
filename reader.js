@@ -135,7 +135,7 @@ var
 			}
 		]			
 	}),
-	CHIP = require('chipper'); 			// IDOP workflow chipper+detector
+	HACK = require('geohack'); 			// IDOP workflow chipper+detector
 
 var  			// globals
 	Copy = ENUM.copy,
@@ -550,7 +550,7 @@ function idop_Reader(sql,path,cb) {
 			outfile: ""
 		};
 		
-	CHIP.workflow(sql, parms, function (chip,dets) {
+	HACK.workflow(sql, parms, function (chip,dets) {
 		cb(dets);
 	});
 }

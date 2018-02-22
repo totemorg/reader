@@ -14,7 +14,7 @@
     "unoconv": "^0.1.2",
     "xml2js": "^0.4.17",
     "yql": "^1.0.2",
-    "chipper": "^1.0.0",
+    "geohack": "^1.0.0",
 	"enum": "^1.0.0"
   },
   "devDependencies": {},
