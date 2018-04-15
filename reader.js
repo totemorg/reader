@@ -38,44 +38,6 @@ var  										// external Bindings
 
 var 										// totem bindings
 	READ = module.exports = {
-		idop	: idop_Reader,
-		xlsx	: xlsx_Reader,	
-		text	: txt_Reader,	
-		html	: html_Reader,
-		yql		: yql_Reader,
-		odt		: ood_Reader,
-		odp		: oop_Reader,
-		ods		: oos_Reader,
-		pdf		: pdf_Reader,
-		db		: db_Reader,
-		jpg		: jpg_Reader,
-		xml		: xml_Reader,
-		py		: py_Reader,
-		js		: js_Reader,
-		db		: db_Reader,
-		jade	: jade_Reader,
-		config	: config_Reader,
-		reader	: Reader,
-		enabled : true,
-		trace 	: false,
-		classif	: ENV.READER		// Use Bayes classifier.  Logireg also possible.  LDA not support
-					? NLP.BayesClassifier.restore(JSON.parse(FS.readFileSync(ENV.READER)))
-					: new NLP.BayesClassifier(),
-		minTextLen : 10,				// Min text length to trigger indexing
-		minReadability : -9999,			// Min readability score to trigger NLP
-		minRelevance: 0.0, 				// Min NLP relevance to tripper intake
-		spellRubric: {
-			"spelling": 3,
-			"suggestion": 1,
-			"grammar": 2
-		}
-	};
-
-var 								// nodejs bindings
-	FS = require('fs');			// File system
-
-var 
-	ENUM = require("enum").extend({
 		String: [
 			function cleaner() {	
 				return this
@@ -133,13 +95,48 @@ var
 						cb();
 					});
 			}
-		]			
-	}),
+		],
+		
+		idop	: idop_Reader,
+		xlsx	: xlsx_Reader,	
+		text	: txt_Reader,	
+		html	: html_Reader,
+		yql		: yql_Reader,
+		odt		: ood_Reader,
+		odp		: oop_Reader,
+		ods		: oos_Reader,
+		pdf		: pdf_Reader,
+		db		: db_Reader,
+		jpg		: jpg_Reader,
+		xml		: xml_Reader,
+		py		: py_Reader,
+		js		: js_Reader,
+		db		: db_Reader,
+		jade	: jade_Reader,
+		config	: config_Reader,
+		reader	: Reader,
+		enabled : true,
+		trace 	: false,
+		classif	: ENV.READER		// Use Bayes classifier.  Logireg also possible.  LDA not support
+					? NLP.BayesClassifier.restore(JSON.parse(FS.readFileSync(ENV.READER)))
+					: new NLP.BayesClassifier(),
+		minTextLen : 10,				// Min text length to trigger indexing
+		minReadability : -9999,			// Min readability score to trigger NLP
+		minRelevance: 0.0, 				// Min NLP relevance to tripper intake
+		spellRubric: {
+			"spelling": 3,
+			"suggestion": 1,
+			"grammar": 2
+		}
+	};
+
+var 								// nodejs bindings
+	FS = require('fs');			// File system
+
+var 
 	HACK = require('geohack'); 			// IDOP workflow chipper+detector
 
-var  			// globals
-	Copy = ENUM.copy,
-	Each = ENUM.each;
+const { Copy,Each,Log } = require("enum");
 
 function config_Reader (sql) {
 	sql.query('SELECT * FROM app1.nlprules WHERE Enabled')
