@@ -38,65 +38,6 @@ var  										// external Bindings
 
 var 										// totem bindings
 	READ = module.exports = {
-		String: [
-			function cleaner() {	
-				return this
-						.toUpperCase()
-						.replace(/\t/gm,"")
-						.replace(/^#*/gm,"")
-						.replace(/\n/gm," ")
-						.replace(/<BR>/g," ")
-						.replace(/\&NBSP;/g," ")
-						.replace(/,/g,".")
-						.replace(/:/g,".")
-						.replace(/;/g,".")
-						.replace(/ AND /g,".")
-						.replace(/ OR /g,".")
-						.replace(/ THEN /g,".")
-						.replace(/ IF /g,".")
-						.replace(/ BECAUSE /g,".")
-						.replace(/ WHEN /g,".")
-						.replace(/  /g," ");
-			},
-
-			function splitter() {
-				return this.match( /[^\.!\?]+[\.!\?]+/g );
-			},
-
-			function indexor(score,cb) {
-				var rubric = READ.spellRubric,
-					classify = READ.classif,
-					text = this+"";
-
-				if (text.length > READ.minTextLen)
-					SPELL.check( text, function (err,checks) {
-
-						if (!checks || err) checks = [];
-
-						READ.each(checks, function (n,check) {
-							score.Readability -= rubric[check.type];
-						});
-
-						//console.log([text, score.Readability, READ.minReadability]);
-
-						if (score.Readability > READ.minReadability)
-							text.splitter().each( function (n,frag) {
-								//console.log([n,frag]);
-
-								if (frag) 								// discard empties
-									if (frag.indexOf("<") < 0) 			// discard html (yes - a stupid filter)
-										classify.getClassifications(frag).each( function (m,idx) {
-											//console.log([frag,idx.value,idx.label,READ.minRelevance]);
-											if (idx.value > READ.minRelevance) 		// discard irrelevant
-												score[idx.label] += idx.value;
-										});
-							});
-
-						cb();
-					});
-			}
-		],
-		
 		idop	: idop_Reader,
 		xlsx	: xlsx_Reader,	
 		text	: txt_Reader,	
@@ -576,4 +517,63 @@ function Reader(sql,path,cb) {
 	
 }
 	
+[
+	function cleaner() {	
+		return this
+				.toUpperCase()
+				.replace(/\t/gm,"")
+				.replace(/^#*/gm,"")
+				.replace(/\n/gm," ")
+				.replace(/<BR>/g," ")
+				.replace(/\&NBSP;/g," ")
+				.replace(/,/g,".")
+				.replace(/:/g,".")
+				.replace(/;/g,".")
+				.replace(/ AND /g,".")
+				.replace(/ OR /g,".")
+				.replace(/ THEN /g,".")
+				.replace(/ IF /g,".")
+				.replace(/ BECAUSE /g,".")
+				.replace(/ WHEN /g,".")
+				.replace(/  /g," ");
+	},
+
+	function splitter() {
+		return this.match( /[^\.!\?]+[\.!\?]+/g );
+	},
+
+	function indexor(score,cb) {
+		var rubric = READ.spellRubric,
+			classify = READ.classif,
+			text = this+"";
+
+		if (text.length > READ.minTextLen)
+			SPELL.check( text, function (err,checks) {
+
+				if (!checks || err) checks = [];
+
+				READ.each(checks, function (n,check) {
+					score.Readability -= rubric[check.type];
+				});
+
+				//console.log([text, score.Readability, READ.minReadability]);
+
+				if (score.Readability > READ.minReadability)
+					text.splitter().each( function (n,frag) {
+						//console.log([n,frag]);
+
+						if (frag) 								// discard empties
+							if (frag.indexOf("<") < 0) 			// discard html (yes - a stupid filter)
+								classify.getClassifications(frag).each( function (m,idx) {
+									//console.log([frag,idx.value,idx.label,READ.minRelevance]);
+									if (idx.value > READ.minRelevance) 		// discard irrelevant
+										score[idx.label] += idx.value;
+								});
+					});
+
+				cb();
+			});
+	}
+].extend(String);
+		
 // UNCLASSIFIED
