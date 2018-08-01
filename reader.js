@@ -17,12 +17,19 @@
  * @requires teacher
  */
 
-var 										// Interface
+var 
+	// globals
 	ENV = process.env,
 	SLASH = "/",
-	DOT = ".";
+	DOT = ".",
 
-var  										// external Bindings
+	// nodejs bindings
+	FS = require('fs'),			// File system
+
+	// totem
+	//HACK = require('geohack'), 			// chipper+detector workflow
+
+	// 3rd party
 	EXCEL = require('node-xlsx'),			// Excel parser
 	JSDOM = require('jsdom'),				// Web site crawler	
 	//XMLP = require("htmlparser"),			// HTML parser
@@ -38,7 +45,7 @@ var  										// external Bindings
 
 var 										// totem bindings
 	READ = module.exports = {
-		idop	: idop_Reader,
+		//idop	: idop_Reader,
 		xlsx	: xlsx_Reader,	
 		text	: txt_Reader,	
 		html	: html_Reader,
@@ -47,13 +54,12 @@ var 										// totem bindings
 		odp		: oop_Reader,
 		ods		: oos_Reader,
 		pdf		: pdf_Reader,
-		db		: db_Reader,
 		jpg		: jpg_Reader,
 		xml		: xml_Reader,
-		py		: py_Reader,
-		js		: js_Reader,
-		db		: db_Reader,
-		jade	: jade_Reader,
+		//py		: py_Reader,
+		//js		: js_Reader,
+		//db		: db_Reader,
+		//jade	: jade_Reader,
 		config	: config_Reader,
 		reader	: Reader,
 		enabled : true,
@@ -70,12 +76,6 @@ var 										// totem bindings
 			"grammar": 2
 		}
 	};
-
-var 								// nodejs bindings
-	FS = require('fs');			// File system
-
-var 
-	HACK = require('geohack'); 			// IDOP workflow chipper+detector
 
 const { Copy,Each,Log } = require("enum");
 
@@ -114,43 +114,46 @@ function config_Reader (sql) {
 	});
 }
 
+/*
 function db_Reader(sql,path,cb) {
 	sql.query("SELECT * FROM ??", path, function (recs) {
 		cb(JSON.stringify(recs));
 	});
-}
+} */
 
 function jpg_Reader(sql,path,cb) {		
 }
 
 function xlsx_Reader(sql,path,cb) {
-	var sheets = EXCEL.parse(path).worksheets;
+	var 
+		sheets = EXCEL.parse(path),
+		recs = [];
 	
-	// For some reason EXCEL returns arrays that cant be enumerated with EACH().
-	
-	for (var n=0,N=sheets.length; n<N; n++) {  // sheet - no formulas allowed
-		var sheet = sheets[n];
-		var vars = new Array(sheet.maxCol);
-		var data = sheet.data;
-		
-//console.log("sheet="+sheet.name+" rows="+data.length);
+	if (sheets)
+		sheets.forEach( function (sheet, n) {  // sheet - no formulas allowed
+			var 
+				vars = new Array(sheet.maxCol),
+				data = sheet.data;
 
-		for (var k=0,K=data.length; k<K; k++) {
-			var cell = data[k];
-			var rec = {ID:k};
-		
-			if (k==0) // 1st record is the header containing field names
-				for (var i=0,I=cell.length; i<I; i++) 
-					vars[i] = cell[i].value;
-					
-			else {	// following records contain data
-				for (var i=0,I=cell.length; i<I; i++) 
-					rec[vars[i]] = cell[i].value;
-			
-				cb(rec);
-			}
-		}
-	}
+			data.forEach( function (row, j) {
+				var
+					rec = new Object({ID:j, sheet: sheet.name});
+
+				if ( j ) {
+					recs.push(rec);
+					row.forEach( function (cell, i) {
+						rec[vars[i]] = cell;
+					});
+				}
+				
+				else   // 1st record is the header containing field names
+					row.forEach( function (cell, i) {
+						vars[i] = cell;
+					});
+			});
+		});
+	
+	cb(recs);
 }
 
 function txt_Reader(sql,path,cb) {
@@ -159,6 +162,7 @@ function txt_Reader(sql,path,cb) {
 	} catch (err) {};
 }
 
+/*
 function py_Reader(sql,path,cb) {
 	try {
 		sql.query("UPDATE engines SET ? WHERE least(?)",[
@@ -184,6 +188,7 @@ function jade_Reader(sql,path,cb) {
 	} catch (err) {};
 			
 }
+*/
 
 function oop_Reader(sql,path,cb) {	
 }
@@ -474,6 +479,7 @@ function yql_Reader(sql,path,cb) {
 	});
 }
 
+/*
 function idop_Reader(sql,path,cb) {	
 	// area contains parms and is used to start the swag workflow
 	var env = process.env,
@@ -490,8 +496,9 @@ function idop_Reader(sql,path,cb) {
 		
 	HACK.workflow(sql, parms, function (chip,dets) {
 		cb(dets);
-	});
+	}); 
 }
+*/
 
 function Reader(sql,path,cb) {
 	console.log("reader");
