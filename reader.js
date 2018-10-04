@@ -80,7 +80,7 @@ var 										// totem bindings
 const { Copy,Each,Log } = require("enum");
 
 function config_Reader (sql) {
-	sql.query('SELECT * FROM app1.nlprules WHERE Enabled')
+	sql.query('SELECT * FROM app.nlprules WHERE Enabled')
 	.on('error', function (err) {
 		console.info('Cant get NLP rule - '+err);
 	})
