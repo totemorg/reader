@@ -580,5 +580,17 @@ function Reader(sql,path,cb) {
 			});
 	}
 ].extend(String);
-		
+
+//=============== unit tests
+
+/**
+@class READER.Unit_Tests_Use_Cases
+*/
+
+switch ( process.argv[2] ) { //< unit tests
+	case "?":
+		Log("unit test with 'node reader.js [R1 || R2 || ...]'");
+		break;
+}
+
 // UNCLASSIFIED

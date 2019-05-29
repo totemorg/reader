@@ -161,6 +161,10 @@ that were uploaded into Totem,  Ingested text is checked for readibility, indexe
 Clone [READER file readers](https://github.com/acmesds/reader) into your PROJECT/reader folder.   
 Clone [ENUM basic enumerators](https://github.com/acmesds/enum) into your PROJECT/enum folder.   
 
+### Unit test
+
+	npm test [ ? || R1 || R2 || ...]
+	
 ## Usage
 
 Simply require, configure and start the READER:
