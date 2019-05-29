@@ -6,20 +6,18 @@
   "dependencies": {
     "jsdom": "^7.2.2",
     "lda": "^0.1.9",
-    "lodash": "^4.17.4",
+    "lodash": "^4.17.11",
     "natural": "^0.2.1",
     "node-xlsx": "^0.6.0",
     "pdf2json": "^0.7.1",
     "teacher": "0.0.1",
     "unoconv": "^0.1.2",
-    "xml2js": "^0.4.17",
-    "yql": "^1.0.2",
-    "geohack": "^1.0.0",
-	"enum": "^1.0.0"
+    "xml2js": "^0.4.19",
+    "yql": "^1.0.2"
   },
   "devDependencies": {},
   "scripts": {
-    "test": "node test.js"
+    "test": "node reader.js"
   },
   "repository": {
     "type": "git",

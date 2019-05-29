@@ -1,20 +1,18 @@
 // UNCLASSIFIED
 
 /**
- * @module reader
- * @public
- * @requires base
- * @requires node-xlsx
- * @requires jsdom
- * @requires fs
- * @requires xml2js
- * @requires unoconv
- * @requires htmlparser
- * @requires office
- * @requires pdf2json
- * @requires yql
- * @requires natural
- * @requires teacher
+ @requires fs
+ @requires enum
+ @module reader
+ @requires node-xlsx
+ @requires jsdom
+ @requires xml2js
+ @requires unoconv
+ @requires htmlparser
+ @requires pdf2json
+ @requires yql
+ @requires natural
+ @requires teacher
  */
 
 var 

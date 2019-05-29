@@ -1,18 +1,19 @@
-# Totem READER
-
+/**
 @class READER [![Forked from SourceForge](https://sourceforge.net)]
+
+# READER
 
 READER will index (parse, scrape, etc) a variety of document, graphics, presentation, and spreadsheet files 
 that were uploaded into Totem,  Ingested text is checked for readibility, indexed to the best using 
 [NLP training rules](/admins.view), then reflected into the [file stores](/files.view).
 
-+ WEB files
+### WEB files
 
 	html	- Web site
 	rss		- News feed
 	idop	- NTM imagery
 		
-+ Document files
+### Document files
 
 	bib      - BibTeX [.bib]
 	doc      - Microsoft Word 97/2000/XP [.doc]
@@ -45,7 +46,7 @@ that were uploaded into Totem,  Ingested text is checked for readibility, indexe
 	vor3     - StarWriter 3.0 Template [.vor]
 	xhtml    - XHTML Document [.html]
 
-+ Graphics files
+### Graphics files
 
 	bmp      - Windows Bitmap [.bmp]
 	emf      - Enhanced Metafile [.emf]
@@ -79,7 +80,7 @@ that were uploaded into Totem,  Ingested text is checked for readibility, indexe
 	xhtml    - XHTML [.xhtml]
 	xpm      - X PixMap [.xpm]
 
-+ Presentation files
+### Presentation files
 
 	bmp      - Windows Bitmap [.bmp]
 	emf      - Enhanced Metafile [.emf]
@@ -125,7 +126,7 @@ that were uploaded into Totem,  Ingested text is checked for readibility, indexe
 	xhtml    - XHTML [.xml]
 	xpm      - X PixMap [.xpm]
 
-+ Spreadsheet files
+### Spreadsheet files
 
 	csv      - Text CSV [.csv]
 	dbf      - dBASE [.dbf]
@@ -157,13 +158,25 @@ that were uploaded into Totem,  Ingested text is checked for readibility, indexe
 
 ## Installation
 
-Download the latest version with
-
-	git clone https://git.geointapps.org/acmesds/reader
+Clone [READER file readers](https://github.com/acmesds/reader) into your PROJECT/reader folder.   
+Clone [ENUM basic enumerators](https://github.com/acmesds/enum) into your PROJECT/enum folder.   
 
 ## Usage
 
+Simply require, configure and start the READER:
+	
+	var READ = require("reader").config({
+		key: value, 						// set key
+		"key.key": value, 					// indexed set
+		"key.key.": value					// indexed append
+	}, function (err) {
+		console.log( err ? "something evil is lurking" : "look mom - Im running!");
+	});
+
+where [its configuration keys](https://totem.west.ile.nga.ic.gov/shares/prm/reader/index.html) follow 
+the [ENUM deep copy conventions](https://github.com/acmesds/enum).
 
 ## License
 
 [MIT](LICENSE)
+*/
