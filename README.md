@@ -176,6 +176,11 @@ Simply require, configure and start the READER:
 where [its configuration keys](https://totem.west.ile.nga.ic.gov/shares/prm/reader/index.html) follow 
 the [ENUM deep copy conventions](https://github.com/acmesds/enum).
 
+## Contributing
+
+To contribute to this module, see our [issues](https://totem.west.ile.nga.ic.gov/issues.view)
+and [milestones](https://totem.west.ile.nga.ic.gov/milestones.view).
+
 ## License
 
 [MIT](LICENSE)
