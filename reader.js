@@ -579,7 +579,7 @@ function Reader(sql,path,cb) {
 				cb();
 			});
 	}
-].extend(String);
+].Extend(String);
 
 //=============== unit tests
 
