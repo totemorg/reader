@@ -13,6 +13,7 @@
  @requires yql
  @requires natural
  @requires teacher
+ @requires lda
  */
 
 var 
@@ -61,8 +62,13 @@ var 										// totem bindings
 		config	: config_Reader,
 		reader	: Reader,
 		enabled : true,
-		trace 	: false,
-		classif	: ENV.READER		// Use Bayes classifier.  Logireg also possible.  LDA not support
+		trials 	:  [  // nlp trials
+			'Windows 64 bit is a fine Operating System',
+			'i would like a circular polarized beam please',
+			'this algorithm is still highly experimental',
+			'i need more hyperspectral data'
+		],
+		classif	: ENV.READER		// nlp classifire - Use Bayes classifier.  Logireg also possible.
 					? NLP.BayesClassifier.restore(JSON.parse(FS.readFileSync(ENV.READER)))
 					: new NLP.BayesClassifier(),
 		minTextLen : 10,				// Min text length to trigger indexing
@@ -78,37 +84,30 @@ var 										// totem bindings
 const { Copy,Each,Log } = require("enum");
 
 function config_Reader (sql) {
+	var 
+		recs = 0,
+		classif = READ.classif;
+	
 	sql.query('SELECT * FROM app.nlprules WHERE Enabled')
-	.on('error', function (err) {
-		console.info('Cant get NLP rule - '+err);
-	})
-	.on('result', function (rule) {
+	.on('result', rule => {
+		recs++;
 		READ.classif.addDocument(rule.Usecase.toUpperCase(), rule.Index);
 	})
-	.on('end', function () {
-		READ.classif.train();
-		
-		if (READ.trace) {
-			var Trials = [
-				'Windows 64 bit is a fine Operating System',
-				'i would like a circular polarized beam please',
-				'this algorithm is still highly experimental',
-				'i need more hyperspectral data'];
-			
-			READ.each(Trials, function (n,trial) {
-				console.info(trial+" -> ");
-				console.log(READ.classif.getClassifications(trial));
-			});
+	.on('end', (x) => {
+		if (recs) {
+			classif.train();
+
+			if ( trials = READ.trials) 
+				trials.forEach( trial => {
+					Log("NLP", trial, "=>", classif.classify(trial));
+				});
+
+			if(ENV.READER)
+				classif.save(ENV.READER, function(err, classifier) {
+					if (err) 
+					Log('Cant save NLP trainging state - '+err);
+				});			
 		}
-		
-		READ.idxs = READ.classif.getClassifications("test");
-		console.log(READ.idxs);
-		
-		if(ENV.READER)
-			READ.classif.save(ENV.READER, function(err, classifier) {
-				if (err) 
-				console.info('Cant save NLP trainging state - '+err);
-			});			
 	});
 }
 
