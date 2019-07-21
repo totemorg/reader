@@ -7,7 +7,7 @@
     "jsdom": "^7.2.2",
     "lda": "^0.1.9",
     "lodash": "^4.17.11",
-    "natural": "^0.2.1",
+    "natural": "^0.6.3",
     "node-xlsx": "^0.6.0",
     "pdf2json": "^0.7.1",
     "teacher": "0.0.1",
@@ -17,8 +17,8 @@
   },
   "devDependencies": {},
   "scripts": {
-	  "prmprep": "source ./maint.sh prmput",
-	  "prmload": "source ./maint.sh prmget",	 
+    "prmprep": "source ./maint.sh prmput",
+    "prmload": "source ./maint.sh prmget",
     "test": "node reader.js"
   },
   "repository": {
