@@ -24,16 +24,17 @@ var
 	//HACK = require('geohack'), 			// chipper+detector workflow
 
 	// 3rd party
-	EXCEL = require('node-xlsx'),			// Excel parser
-	JSDOM = require('jsdom'),				// Web site crawler	
 	//XMLP = require("htmlparser"),			// HTML parser
 	//OO = require('office'),				// Open Office parser
+	//SPELL = require('teacher'),				// Spell checker - requires service.afterthedeadline.com
+	
+	JSDOM = require('jsdom'),				// Web site crawler	
 	XML2JS = require('xml2js'), 	// XML2JS reader	
 	PDFP = require('pdf2json/pdfparser'), 	// PDF parser
 	YQL = require('yql'),					// Cooperating site scrapper
+	EXCEL = require('node-xlsx'),			// Excel parser
 	NLP = require('natural'),				// Natural Language Parsing (Bayes or Logireg)
 	LDA = require('lda'), 					// NLP (via Latent Dirichlet Allocation)
-	//SPELL = require('teacher'),				// Spell checker - requires service.afterthedeadline.com
 	XML2JS = require("xml2js"),					// xml to json parser 	
 	UNO = require('unoconv'); 				// File converter/reader
 
@@ -65,8 +66,6 @@ var 										// totem bindings
 		}
 	};
 
-const { Copy,Each,Log } = require("enum");
-
 function config_Reader (sql) {
 	var 
 		recs = 0,
@@ -78,8 +77,8 @@ function config_Reader (sql) {
 		Stemmer = NLP.PorterStemmer,
 		Analyzer = NLP.SentimentAnalyzer,
 		Tokenizer = NLP.TreebankWordTokenizer, //NLP.TreebankWordTokenizer,
-		corpus = FS.readFileSync( paths.nlpCorpus, "utf8" ).replace(/\n/gm,"").split(" "),
-		checker = READ.checker = null, // new Checker( corpus ),
+		corpus = FS.readFileSync( paths.nlpCorpus, "utf8" ).replace(/^-/g,"").replace(/\n/gm," ").split(" "),
+		checker = READ.checker = new Checker( corpus ),
 		trie = READ.trie = new Trie(),
 		analyzer = READ.analyzer = new Analyzer("English", Stemmer, "pattern").getSentiment,
 		tokenizer = READ.tokenizer = new Tokenizer().tokenize,
@@ -96,24 +95,25 @@ function config_Reader (sql) {
 	}
 	
 	// train and test nlp classifier
-	sql.query('SELECT * FROM app.nlprules WHERE Enabled')
-	.on('result', rule => {
-		recs++;
-		classif.addDocument(rule.Usecase.toUpperCase(), rule.Index);
-	})
-	.on('end', () => {
-		if (recs) {
-			classif.train();
+	if (sql)
+		sql.query('SELECT * FROM app.nlprules WHERE Enabled')
+		.on('result', rule => {
+			recs++;
+			classif.addDocument(rule.Usecase.toUpperCase(), rule.Index);
+		})
+		.on('end', () => {
+			if (recs) {
+				classif.train();
 
-			if ( trials = READ.trials) 
-				trials.forEach( trial => {
-					Log("NLP", trial, "=>", classif.classify(trial));
-				});
+				if ( trials = READ.trials) 
+					trials.forEach( trial => {
+						Log("NLP", trial, "=>", classif.classify(trial));
+					});
 
-			if ( paths.nlpClasssifier )
-				classif.save(paths.nlpClasssifier, err => Log( err || "NLP classifier saved" ) );
-		}
-	});
+				if ( paths.nlpClasssifier )
+					classif.save(paths.nlpClasssifier, err => Log( err || "NLP classifier saved" ) );
+			}
+		});
 }
 
 function Reader(sql,path,cb) {
@@ -597,8 +597,8 @@ function Reader(sql,path,cb) {
 }
 	
 
+/*
 [
-	/*
 	function cleaner() {	
 		return this
 				.toUpperCase()
@@ -655,8 +655,8 @@ function Reader(sql,path,cb) {
 				cb();
 			});
 	}
-	*/
 ].Extend(String);
+*/
 
 //=============== unit tests
 
@@ -668,6 +668,14 @@ switch ( process.argv[2] ) { //< unit tests
 	case "?":
 		Log("unit test with 'node reader.js [R1 || R2 || ...]'");
 		break;
+		
+	case "R1":
+		var R = require("./reader");
+		R.config(null);
+		console.log(R);
 }
+
+const { Copy,Each,Log } = require("enum");
+
 
 // UNCLASSIFIED
