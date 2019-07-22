@@ -17,11 +17,6 @@
  */
 
 var 
-	// globals
-	ENV = process.env,
-	SLASH = "/",
-	DOT = ".",
-
 	// nodejs bindings
 	FS = require('fs'),			// File system
 
@@ -38,7 +33,7 @@ var
 	YQL = require('yql'),					// Cooperating site scrapper
 	NLP = require('natural'),				// Natural Language Parsing (Bayes or Logireg)
 	LDA = require('lda'), 					// NLP (via Latent Dirichlet Allocation)
-	SPELL = require('teacher'),				// Spell checker 
+	//SPELL = require('teacher'),				// Spell checker - requires service.afterthedeadline.com
 	XML2JS = require("xml2js"),					// xml to json parser 	
 	UNO = require('unoconv'); 				// File converter/reader
 
@@ -48,15 +43,18 @@ var 										// totem bindings
 		reader	: Reader,
 		enabled : true,
 		specials: ["drugs", "money", "dto", "cto"],
+		paths: {
+			nlpCorpus: "./nlp_corpus.txt",
+			nlpClasssifier: "./nlp_classifier.txt",
+			nlpRuleset: "./nlp_pos_rules.txt",
+			nlpLexicon: "./nlp_pos_lexicon.txt"
+		},
 		trials 	:  [  // nlp trials
 			'Windows 64 bit is a fine Operating System',
 			'i would like a circular polarized beam please',
 			'this algorithm is still highly experimental',
 			'i need more hyperspectral data'
 		],
-		classif	: ENV.READER		// nlp classifire - Use Bayes classifier.  Logireg also possible.
-					? NLP.BayesClassifier.restore(JSON.parse(FS.readFileSync(ENV.READER)))
-					: new NLP.BayesClassifier(),
 		minTextLen : 10,				// Min text length to trigger indexing
 		minReadability : -9999,			// Min readability score to trigger NLP
 		minRelevance: 0.0, 				// Min NLP relevance to tripper intake
@@ -72,14 +70,38 @@ const { Copy,Each,Log } = require("enum");
 function config_Reader (sql) {
 	var 
 		recs = 0,
-		classif = READ.classif;
+		paths = READ.paths,
+		
+		Classifier = NLP.BayesClassifier,
+		Checker = NLP.Spellcheck,
+		Trie = NLP.Trie,
+		Stemmer = NLP.PorterStemmer,
+		Analyzer = NLP.SentimentAnalyzer,
+		Tokenizer = NLP.TreebankWordTokenizer, //NLP.TreebankWordTokenizer,
+		corpus = FS.readFileSync( paths.nlpCorpus, "utf8" ).replace(/\n/gm,"").split(" "),
+		checker = READ.checker = null, // new Checker( corpus ),
+		trie = READ.trie = new Trie(),
+		analyzer = READ.analyzer = new Analyzer("English", Stemmer, "pattern").getSentiment,
+		tokenizer = READ.tokenizer = new Tokenizer().tokenize,
+		stemmer = READ.stemmer = Stemmer.stem,
+		rules = READ.rules = new NLP.RuleSet(paths.nlpRuleset),
+		lexicon = READ.lexicon = new NLP.Lexicon(paths.nlpLexicon, "?"),
+		tagger = READ.tagger = new NLP.BrillPOSTagger(lexicon,rules);
+
+	try {
+		var classif = READ.classif = Classifier.restore(JSON.parse(FS.readFileSync(paths.nlpClasssifier)));
+	}
+	catch (err) {
+		var classif = READ.classif = new Classifier();
+	}
 	
+	// train and test nlp classifier
 	sql.query('SELECT * FROM app.nlprules WHERE Enabled')
 	.on('result', rule => {
 		recs++;
-		READ.classif.addDocument(rule.Usecase.toUpperCase(), rule.Index);
+		classif.addDocument(rule.Usecase.toUpperCase(), rule.Index);
 	})
-	.on('end', (x) => {
+	.on('end', () => {
 		if (recs) {
 			classif.train();
 
@@ -88,11 +110,8 @@ function config_Reader (sql) {
 					Log("NLP", trial, "=>", classif.classify(trial));
 				});
 
-			if(ENV.READER)
-				classif.save(ENV.READER, function(err, classifier) {
-					if (err) 
-					Log('Cant save NLP trainging state - '+err);
-				});			
+			if ( paths.nlpClasssifier )
+				classif.save(paths.nlpClasssifier, err => Log( err || "NLP classifier saved" ) );
 		}
 	});
 }
@@ -179,8 +198,8 @@ function Reader(sql,path,cb) {
 	}
 
 	function ods_Reader(sql,path,cb) {	
-		UNO.convert(path, "ooxml", {output:ENV.PUBLIC+"tmp/"+path}, function (err,data) {
-			FS.readFile(ENV.PUBLIC+"tmp/"+path, 'utf-8', function (err,data) {
+		UNO.convert(path, "ooxml", {output:"./tmps/"+path}, function (err,data) {
+			FS.readFile("./tmps/"+path, 'utf-8', function (err,data) {
 				XML2JS.parseString(data, function (err,json) {
 	//console.log(json);
 					Each(json["Workbook"]["ss:Worksheet"], function (n,sheet) {
@@ -238,8 +257,8 @@ function Reader(sql,path,cb) {
 			});	
 		}		
 		else 			// use ooxml (UNO has problems with xml)  retains 1st image in public/tmp
-			UNO.convert(path, "ooxml", {output:ENV.PUBLIC+"tmp/"+path}, function (err,data) {
-				FS.readFile(ENV.PUBLIC+"tmp/"+path, 'utf-8', function (err,data) {
+			UNO.convert(path, "ooxml", {output:"./tmps/"+path}, function (err,data) {
+				FS.readFile("./tmps/"+path, 'utf-8', function (err,data) {
 					XML2JS.parseString(data, function (err,json) {
 						Each(json["w:wordDocument"]["w:body"], function (n,body) {
 						Each(body["w:p"], function (n,para) {
@@ -515,75 +534,64 @@ function Reader(sql,path,cb) {
 		keys[idx.label] = 0;
 	});  */
 	
-	if (read = readers[type])
-		read(sql, path, text => {
+	if (reader = readers[type])
+		reader(sql, path, text => {
 			var 
 				rubric = READ.spellRubric,
 				classif = READ.classif,
+				paths = READ.paths,
+				checker = READ.checker, 
+				trie = READ.trie,
+				analyzer = READ.analyzer,
+				tokenizer = READ.tokenizer,
+				stemmer = READ.stemmer,
+				rules = READ.rules,
+				lexicon = READ.lexicon,
+				tagger = READ.tagger,
 				scores = [],
-				Trie = NLP.Trie,
-				Stemmer = NLP.PorterStemmer,
-				Analyzer = NLP.SentimentAnalyzer,
-				Tokenizer = NLP.TreebankWordTokenizer, //NLP.TreebankWordTokenizer,
-				trie = new Trie(),
-				analyzer = new Analyzer("English", Stemmer, "pattern").getSentiment,
-				tokenizer = new Tokenizer().tokenize,
-				stemmer = Stemmer.stem,
 				frags = text.replace(/\n/gm,"").split("."),
-				readability = 0,
-				rules = new NLP.RuleSet("./nlp_pos_rules.txt"),
-				lexicon = new NLP.Lexicon("./nlp_pos_lexicon.txt", "?"),
-				tagger = new NLP.BrillPOSTagger(lexicon,rules);
+				readability = 0;
 
 			READ.specials.forEach( spec => trie.addString(spec) );
 
-			SPELL.check( text, function (err,checks) {
-				//Log("spell", err, checks, tagger ? true : false );
+			frags.forEach( frag => {
+				var 
+					tokens = tokenizer(frag),
+					stems = [],
+					flags = "";
 
-				if (checks)
-					Each(checks, function (n,check) {
-						readability -= rubric[check.type];
-					});
+				if (stemmer) tokens.forEach( token => stems.push( stemmer(token) ) );
+				if (trie) stems.forEach( stem => flags += trie.contains(stem) ? "y" : "n" );
+				if (checker) tokens.forEach( token => readability += checker.isCorrect(token) );
+				
+				try {
+					var sents = analyzer(tokens);
+				}
+				catch (err) {
+					var sents = err+"";
+				}
 
-				if (readability > READ.minReadability)
-					frags.forEach( frag => {
-						var 
-							tokens = tokenizer(frag),
-							stems = [],
-							flags = "";
+				try {
+					var tags = tagger.tag(tokens).taggedWords;
+					tags.forEach( (tag,n) => tags[n] = tag.tag );
+				}
+				catch (err) {
+					var tags = [err+""];
+				}
 
-						tokens.forEach( token => stems.push( stemmer(token) ) );
-						stems.forEach( stem => flags += trie.contains(stem) ? "y" : "n" );
-
-						try {
-							var sents = analyzer(tokens);
-						}
-						catch (err) {
-							var sents = err+"";
-						}
-						
-						try {
-							var tags = tagger.tag(tokens).taggedWords;
-							tags.forEach( (tag,n) => tags[n] = tag.tag );
-						}
-						catch (err) {
-							var tags = [err+""];
-						}
-						
-						scores.push({
-							pos: tags.join(";"),
-							frag: frag,
-							topic: classif.classify(frag),
-							toks: tokens,
-							stems: stems,
-							sentiment: sents,
-							flags: flags,
-							readability: readability
-						});
-					});
-
-				cb(scores);
+				scores.push({
+					pos: tags.join(";"),
+					frag: frag,
+					topic: classif.classify(frag),
+					toks: tokens,
+					stems: stems,
+					sentiment: sents,
+					flags: flags,
+					readability: readability
+				});
 			});
+
+			cb(scores);
 		});
 	
 }
