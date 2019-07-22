@@ -43,7 +43,6 @@ var 										// totem bindings
 		config	: config_Reader,
 		reader	: Reader,
 		enabled : true,
-		specials: ["drugs", "money", "dto", "cto"],
 		paths: {
 			nlpCorpus: "./nlp_corpus.txt",
 			nlpClasssifier: "./nlp_classifier.txt",
@@ -57,7 +56,7 @@ var 										// totem bindings
 			'i need more hyperspectral data'
 		],
 		minTextLen : 10,				// Min text length to trigger indexing
-		minReadability : -9999,			// Min readability score to trigger NLP
+		minReadability : -9999,			// Min relevance score to trigger NLP
 		minRelevance: 0.0, 				// Min NLP relevance to tripper intake
 		spellRubric: {
 			"spelling": 3,
@@ -69,33 +68,9 @@ var 										// totem bindings
 function config_Reader (sql) {
 	var 
 		recs = 0,
-		paths = READ.paths,
-		
-		Classifier = NLP.BayesClassifier,
-		Checker = NLP.Spellcheck,
-		Trie = NLP.Trie,
-		Stemmer = NLP.PorterStemmer,
-		Analyzer = NLP.SentimentAnalyzer,
-		Tokenizer = NLP.TreebankWordTokenizer, //NLP.TreebankWordTokenizer,
-		corpus = FS.readFileSync( paths.nlpCorpus, "utf8" ).replace(/^-/g,"").replace(/\n/gm," ").split(" "),
-		checker = READ.checker = new Checker( corpus ),
-		trie = READ.trie = new Trie(),
-		analyzer = READ.analyzer = new Analyzer("English", Stemmer, "pattern").getSentiment,
-		tokenizer = READ.tokenizer = new Tokenizer().tokenize,
-		stemmer = READ.stemmer = Stemmer.stem,
-		rules = READ.rules = new NLP.RuleSet(paths.nlpRuleset),
-		lexicon = READ.lexicon = new NLP.Lexicon(paths.nlpLexicon, "?"),
-		tagger = READ.tagger = new NLP.BrillPOSTagger(lexicon,rules);
-
-	try {
-		var classif = READ.classif = Classifier.restore(JSON.parse(FS.readFileSync(paths.nlpClasssifier)));
-	}
-	catch (err) {
-		var classif = READ.classif = new Classifier();
-	}
+		paths = READ.paths;
 	
-	// train and test nlp classifier
-	if (sql)
+	if (sql) {		// train and test nlp classifier
 		sql.query('SELECT * FROM app.nlprules WHERE Enabled')
 		.on('result', rule => {
 			recs++;
@@ -114,6 +89,33 @@ function config_Reader (sql) {
 					classif.save(paths.nlpClasssifier, err => Log( err || "NLP classifier saved" ) );
 			}
 		});
+	}
+	
+	else {	// initial config to avoid whacky NLP Array conflicts
+		var
+			Classifier = NLP.BayesClassifier,
+			Checker = NLP.Spellcheck,
+			Trie = NLP.Trie,
+			Stemmer = NLP.PorterStemmer,
+			Analyzer = NLP.SentimentAnalyzer,
+			Tokenizer = NLP.TreebankWordTokenizer, //NLP.TreebankWordTokenizer,
+			corpus = FS.readFileSync( paths.nlpCorpus, "utf8" ).replace(/^-/g,"").replace(/\n/gm," ").split(" "),
+			checker = READ.checker = new Checker( corpus, true ),
+			analyzer = READ.analyzer = new Analyzer("English", Stemmer, "pattern"),
+			tokenizer = READ.tokenizer = new Tokenizer(),
+			stemmer = READ.stemmer = Stemmer.stem,
+			rules = READ.rules = new NLP.RuleSet(paths.nlpRuleset),
+			lexicon = READ.lexicon = new NLP.Lexicon(paths.nlpLexicon, "?"),
+			tagger = READ.tagger = new NLP.BrillPOSTagger(lexicon,rules);
+
+		try {
+			var classif = READ.classif = Classifier.restore(JSON.parse(FS.readFileSync(paths.nlpClasssifier)));
+		}
+		catch (err) {
+			var classif = READ.classif = new Classifier();
+		}
+			
+	}
 }
 
 function Reader(sql,path,cb) {
@@ -529,11 +531,6 @@ function Reader(sql,path,cb) {
 			Readability: 100
 		};
 
-	/*
-	Each(READ.idxs, function (n,idx) {
-		keys[idx.label] = 0;
-	});  */
-	
 	if (reader = readers[type])
 		reader(sql, path, text => {
 			var 
@@ -541,7 +538,7 @@ function Reader(sql,path,cb) {
 				classif = READ.classif,
 				paths = READ.paths,
 				checker = READ.checker, 
-				trie = READ.trie,
+				entities = new NLP.Trie(false),
 				analyzer = READ.analyzer,
 				tokenizer = READ.tokenizer,
 				stemmer = READ.stemmer,
@@ -549,48 +546,64 @@ function Reader(sql,path,cb) {
 				lexicon = READ.lexicon,
 				tagger = READ.tagger,
 				scores = [],
-				frags = text.replace(/\n/gm,"").split("."),
-				readability = 0;
-
-			READ.specials.forEach( spec => trie.addString(spec) );
+				frags = text.replace(/\n/gm,"").split(".");
 
 			frags.forEach( frag => {
-				var 
-					tokens = tokenizer(frag),
-					stems = [],
-					flags = "";
-
-				if (stemmer) tokens.forEach( token => stems.push( stemmer(token) ) );
-				if (trie) stems.forEach( stem => flags += trie.contains(stem) ? "y" : "n" );
-				if (checker) tokens.forEach( token => readability += checker.isCorrect(token) );
 				
-				try {
-					var sents = analyzer(tokens);
-				}
-				catch (err) {
-					var sents = err+"";
-				}
+				if (frag) {
+					var 
+						tokens = tokenizer.tokenize(frag),
+						stems = [],
+						relevance = "",
+						link = "",
+						actors = [];
 
-				try {
-					var tags = tagger.tag(tokens).taggedWords;
-					tags.forEach( (tag,n) => tags[n] = tag.tag );
-				}
-				catch (err) {
-					var tags = [err+""];
-				}
+					tokens.forEach( token => stems.push( stemmer(token) ) );
+					stems.forEach( stem => relevance += checker.isCorrect(stem) ? "y" : "n" );
 
-				scores.push({
-					pos: tags.join(";"),
-					frag: frag,
-					topic: classif.classify(frag),
-					toks: tokens,
-					stems: stems,
-					sentiment: sents,
-					flags: flags,
-					readability: readability
-				});
+					try {
+						var sents = analyzer.getSentiment(tokens);
+					}
+					catch (err) {
+						var sents = err+"";
+					}
+
+					try {
+						var tags = tagger.tag(tokens).taggedWords;
+						tags.forEach( (tag,n) => tags[n] = tag.tag );
+					}
+					catch (err) {
+						var tags = [err+""];
+					}
+
+					tags.forEach( (tag,n) => { 
+						if ( tag.startsWith("VB") ) link += tokens[n]; 
+						else
+						if ( tag.startsWith("?") ) actors.push( tokens[n] );
+					});
+
+					actors.forEach( actor => entities.addString( "actor:"+actor ) );
+					entities.addString( "link:"+link );
+
+					scores.push({
+						pos: tags.join(";"),
+						frag: frag,
+						topic: classif.classify(frag),
+						toks: tokens,
+						stems: stems,
+						sentiment: sents,
+						link: link,
+						actors: actors,
+						relevance: relevance
+					});
+				}
 			});
 
+			Log({
+				actors: entities.keysWithPrefix("actor:"),
+				links: entities.keysWithPrefix("link:")
+			});
+			
 			cb(scores);
 		});
 	
@@ -658,6 +671,10 @@ function Reader(sql,path,cb) {
 ].Extend(String);
 */
 
+READ.config(null);  // must do initial config as NLP whacks Array prototypes
+
+const { Copy,Each,Log } = require("enum");
+
 //=============== unit tests
 
 /**
@@ -667,15 +684,8 @@ function Reader(sql,path,cb) {
 switch ( process.argv[2] ) { //< unit tests
 	case "?":
 		Log("unit test with 'node reader.js [R1 || R2 || ...]'");
-		break;
-		
-	case "R1":
-		var R = require("./reader");
-		R.config(null);
-		console.log(R);
+		break;	
 }
-
-const { Copy,Each,Log } = require("enum");
 
 
 // UNCLASSIFIED
