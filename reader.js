@@ -68,6 +68,7 @@ var 										// totem bindings
 function config_Reader (sql) {
 	var 
 		recs = 0,
+		classif = READ.classif,
 		paths = READ.paths;
 	
 	if (sql) {		// train and test nlp classifier
@@ -91,7 +92,8 @@ function config_Reader (sql) {
 		});
 	}
 	
-	else {	// initial config to avoid whacky NLP Array conflicts
+	else 
+	if ( ! READ.checker ) {	// initial config to avoid whacky NLP Array conflicts
 		var
 			Classifier = NLP.BayesClassifier,
 			Checker = NLP.Spellcheck,
@@ -538,7 +540,6 @@ function Reader(sql,path,cb) {
 				classif = READ.classif,
 				paths = READ.paths,
 				checker = READ.checker, 
-				entities = new NLP.Trie(false),
 				analyzer = READ.analyzer,
 				tokenizer = READ.tokenizer,
 				stemmer = READ.stemmer,
@@ -546,10 +547,19 @@ function Reader(sql,path,cb) {
 				lexicon = READ.lexicon,
 				tagger = READ.tagger,
 				scores = [],
-				frags = text.replace(/\n/gm,"").split(".");
+				frags = text.replace(/\n/gm,"").split("."),
+				entities = new NLP.Trie(false),
+				count = {
+					links: 0,
+					actors: 0
+				},
+				ids = {
+					links: {},
+					actors: {}
+				},
+				dag = new NLP.EdgeWeightedDigraph();
 
 			frags.forEach( frag => {
-				
 				if (frag) {
 					var 
 						tokens = tokenizer.tokenize(frag),
@@ -562,10 +572,10 @@ function Reader(sql,path,cb) {
 					stems.forEach( stem => relevance += checker.isCorrect(stem) ? "y" : "n" );
 
 					try {
-						var sents = analyzer.getSentiment(tokens);
+						var sentiment = analyzer.getSentiment(tokens);
 					}
 					catch (err) {
-						var sents = err+"";
+						var sentiment = err+"";
 					}
 
 					try {
@@ -582,8 +592,13 @@ function Reader(sql,path,cb) {
 						if ( tag.startsWith("?") ) actors.push( tokens[n] );
 					});
 
-					actors.forEach( actor => entities.addString( "actor:"+actor ) );
-					entities.addString( "link:"+link );
+					actors.forEach( actor => {
+						if ( !entities.addString( "Actor:"+actor ) )
+							ids.actors[actor] = count.actors++;
+					});
+					
+					if ( !entities.addString( "Link:"+link ) )
+						ids.links[link] = count.links++;
 
 					scores.push({
 						pos: tags.join(";"),
@@ -591,25 +606,31 @@ function Reader(sql,path,cb) {
 						topic: classif.classify(frag),
 						toks: tokens,
 						stems: stems,
-						sentiment: sents,
+						sentiment: sentiment,
 						link: link,
-						actors: actors,
+						target: actors[actors.length-1],
+						ants: actors.slice(0,actors.length-1),
 						relevance: relevance
 					});
 				}
 			});
 
-			Log({
-				actors: entities.keysWithPrefix("actor:"),
-				links: entities.keysWithPrefix("link:")
+			scores.forEach( score => {
+				if ( targetid = ids.actors[score.target] )
+					score.ants.forEach( ant => {
+						dag.add( ids.actors[ant], targetid, score.sentiment );
+					});
 			});
 			
-			cb(scores);
+			cb({
+				dag: dag,
+				ids: ids,
+				scores: scores
+			});
 		});
 	
 }
 	
-
 /*
 [
 	function cleaner() {	
