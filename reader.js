@@ -50,10 +50,12 @@ var 										// totem bindings
 			nlpLexicon: "./nlp_pos_lexicon.txt"
 		},
 		trials 	:  [  // nlp trials
-			'Windows 64 bit is a fine Operating System',
-			'i would like a circular polarized beam please',
-			'this algorithm is still highly experimental',
-			'i need more hyperspectral data'
+'Windows sucks.',
+'circular polarized beams are my favorite.',
+'Most regression algorithims are not experimental.',
+'hyperspectral data is great for detecting some things.',
+'Milenio sent some money to a DTO and Fred Smiley.',
+'Milenio conspired with Sinola to threaten and kill and butcher Dr Smiley.'
 		],
 		minTextLen : 10,				// Min text length to trigger indexing
 		minReadability : -9999,			// Min relevance score to trigger NLP
@@ -72,35 +74,40 @@ function config_Reader (sql) {
 		paths = READ.paths;
 	
 	if (sql) {		// train and test nlp classifier
-		sql.query('SELECT * FROM app.nlprules WHERE Enabled')
-		.on('result', rule => {
-			recs++;
-			classif.addDocument(rule.Usecase.toUpperCase(), rule.Index);
-		})
-		.on('end', () => {
-			if (recs) {
-				classif.train();
+		sql.query('SELECT * FROM app.nlprules WHERE Enabled', (err,rules) => {
+			
+			rules.forEach( rule => {
+				classif.forEach( cls => {
+					cls.addDocument(rule.Usecase.toUpperCase(), rule.Index);
+				});
+			});
 
+			if (rules.length) {
+				classif.forEach( (cls,n) => {
+					cls.train();
+
+					if ( paths.nlpClasssifier )
+						cls.save(paths.nlpClasssifier+n, err => Log( err || "NLP classifier saved" ) );
+				});
+			
 				if ( trials = READ.trials) 
-					trials.forEach( trial => {
-						Log("NLP", trial, "=>", classif.classify(trial));
+					classif.forEach( (cls,n) => {
+						trials.forEach( trial => {
+							Log("NLP", trial, n+"=>", cls.classify(trial));
+						});
 					});
-
-				if ( paths.nlpClasssifier )
-					classif.save(paths.nlpClasssifier, err => Log( err || "NLP classifier saved" ) );
-			}
+			}			
 		});
 	}
 	
-	else 
-	if ( ! READ.checker ) {	// initial config to avoid whacky NLP Array conflicts
+	else {	// initial config to avoid whacky NLP Array conflicts
 		var
-			Classifier = NLP.BayesClassifier,
+			Classifier = [NLP.BayesClassifier, NLP.LogisticRegressionClassifier],
 			Checker = NLP.Spellcheck,
 			Trie = NLP.Trie,
 			Stemmer = NLP.PorterStemmer,
 			Analyzer = NLP.SentimentAnalyzer,
-			Tokenizer = NLP.TreebankWordTokenizer, //NLP.TreebankWordTokenizer,
+			Tokenizer = NLP.TreebankWordTokenizer, //NLP.WordTokenizer,
 			corpus = FS.readFileSync( paths.nlpCorpus, "utf8" ).replace(/^-/g,"").replace(/\n/gm," ").split(" "),
 			checker = READ.checker = new Checker( corpus, true ),
 			analyzer = READ.analyzer = new Analyzer("English", Stemmer, "pattern"),
@@ -108,13 +115,37 @@ function config_Reader (sql) {
 			stemmer = READ.stemmer = Stemmer.stem,
 			rules = READ.rules = new NLP.RuleSet(paths.nlpRuleset),
 			lexicon = READ.lexicon = new NLP.Lexicon(paths.nlpLexicon, "?"),
-			tagger = READ.tagger = new NLP.BrillPOSTagger(lexicon,rules);
+			tagger = READ.tagger = new NLP.BrillPOSTagger(lexicon,rules),
+			metrics = READ.metrics = {
+				entities: new NLP.Trie(false),
+				count: {
+					links: 0,
+					actors: 0
+				},
+				ids: {
+					links: {},
+					actors: {}
+				},
+				dag: new NLP.EdgeWeightedDigraph(),
+				sentiment: 0,
+				relevance: 0,
+				actors: 0,
+				links: 0,
+				agree: 0,
+				weight: 0
+			};
 
 		try {
-			var classif = READ.classif = Classifier.restore(JSON.parse(FS.readFileSync(paths.nlpClasssifier)));
+			var classif = READ.classif = [];
+			Classifier.forEach( (Cls,n) => {
+				classif[n] = Cls.restore(JSON.parse(FS.readFileSync(paths.nlpClasssifier+n)));
+			});
 		}
 		catch (err) {
-			var classif = READ.classif = new Classifier();
+			var classif = READ.classif = [];
+			Classifier.forEach( (Cls,n) => {
+				classif[n] = new Cls();
+			});
 		}
 			
 	}
@@ -527,11 +558,7 @@ function Reader(sql,path,cb) {
 			//jade	: jade_Reader,
 		},	
 		parts = path.split("."),
-		type = parts.pop(),
-		keys = {
-			Classif: "(U)",
-			Readability: 100
-		};
+		type = parts.pop();
 
 	if (reader = readers[type])
 		reader(sql, path, text => {
@@ -547,17 +574,12 @@ function Reader(sql,path,cb) {
 				lexicon = READ.lexicon,
 				tagger = READ.tagger,
 				scores = [],
-				frags = text.replace(/\n/gm,"").split("."),
-				entities = new NLP.Trie(false),
-				count = {
-					links: 0,
-					actors: 0
-				},
-				ids = {
-					links: {},
-					actors: {}
-				},
-				dag = new NLP.EdgeWeightedDigraph();
+				frags = text.replace(/\n/gm,"").match( /[^\.!\?]+[\.!\?]+/g ),
+				metrics = READ.metrics,
+				entities = metrics.entities,
+				count = metrics.count,
+				ids = metrics.ids,
+				dag = metrics.dag;
 
 			frags.forEach( frag => {
 				if (frag) {
@@ -566,8 +588,12 @@ function Reader(sql,path,cb) {
 						stems = [],
 						relevance = "",
 						link = "",
-						actors = [];
-
+						actors = [],
+						classifs = [],
+						agree = 0,
+						weight = 0;
+					
+					classif.forEach( (cls,n) => classifs[n] = cls.getClassifications(frag) );
 					tokens.forEach( token => stems.push( stemmer(token) ) );
 					stems.forEach( stem => relevance += checker.isCorrect(stem) ? "y" : "n" );
 
@@ -600,11 +626,20 @@ function Reader(sql,path,cb) {
 					if ( !entities.addString( "Link:"+link ) )
 						ids.links[link] = count.links++;
 
+					var ref = classifs[0][0];
+					classifs.forEach( clsif => { 
+						if ( clsif[0].label == ref.label ) agree++; 
+						weight += clsif[0].value;
+					});
+					
 					scores.push({
 						pos: tags.join(";"),
 						frag: frag,
-						topic: classif.classify(frag),
-						toks: tokens,
+						topic: ref.label,
+						classif: classifs,
+						tokens: tokens,
+						agree: agree / classifs.length,
+						weight: weight,
 						stems: stems,
 						sentiment: sentiment,
 						link: link,
@@ -620,13 +655,18 @@ function Reader(sql,path,cb) {
 					score.ants.forEach( ant => {
 						dag.add( ids.actors[ant], targetid, score.sentiment );
 					});
+				
+				metrics.sentiment += score.sentiment;
+				for (var n=0,rel=score.relevance,N=rel.length; n<N; n++) 
+					if (rel.charAt(n) == "y") metrics.relevance += 1;
+				
+				if ( score.link ) metrics.links += 1;
+				metrics.actors += targetid ? score.ants.length + 1 : 0;
+				metrics.weight += score.weight;
+				metrics.agree += score.agree;
 			});
 			
-			cb({
-				dag: dag,
-				ids: ids,
-				scores: scores
-			});
+			cb(metrics, scores);
 		});
 	
 }
