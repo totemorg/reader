@@ -61,6 +61,7 @@ var 										// totem bindings
 		readFile: readFile,
 		anlpDoc: anlpDoc,
 		snlpDoc: snlpDoc,
+		ldaDoc: ldaDoc,
 		enabled : true,
 		paths: {
 			nlpCorpus: "./nlp_corpus.txt",
@@ -89,6 +90,7 @@ var 										// totem bindings
 function configReader (sql) {
 	var 
 		recs = 0,
+		stanford = READ.stanford,
 		classif = READ.classif,
 		paths = READ.paths;
 	
@@ -96,12 +98,26 @@ function configReader (sql) {
 		sql.query('SELECT * FROM app.nlprules WHERE Enabled', (err,rules) => {
 			
 			rules.forEach( rule => {
+				stanford.addDocument( "en", rule.Usecase, rule.Index );
+			
 				classif.forEach( cls => {
-					cls.addDocument(rule.Usecase.toUpperCase(), rule.Index);
+					cls.addDocument(rule.Usecase, rule.Index);
 				});
 			});
 
 			if (rules.length) {
+				( async() => {
+					await stanford.train();
+					stanford.save();
+				}) ();
+				
+				if ( trials = READ.trials) {
+					( async() => {
+						var test = await stanford.process("en", trials.join("") );
+						Log("SNLP", test);
+					}) ();
+				}
+				
 				classif.forEach( (cls,n) => {
 					cls.train();
 
@@ -112,16 +128,18 @@ function configReader (sql) {
 				if ( trials = READ.trials) 
 					classif.forEach( (cls,n) => {
 						trials.forEach( trial => {
-							Log("ANLP", trial, n+"=>", cls.classify(trial));
+							Log(trial, `ANLP${n}=>`, cls.classify(trial));
 						});
 					});
 			}			
 		});
 	}
 	
-	else 
-	if ( !READ.checker ) {	// initial config to avoid whacky ANLP Array conflicts
+	else {	// initial config to avoid whacky ANLP Array conflicts
 		var
+			Stanford = SNLP.NlpManager,
+			stanford = READ.stanford = new Stanford({ languages: ["en"] }),
+			
 			Classifier = [ANLP.BayesClassifier, ANLP.LogisticRegressionClassifier],
 			Checker = ANLP.Spellcheck,
 			Trie = ANLP.Trie,
@@ -572,6 +590,11 @@ function readFile(sql, path, cb) {
 		cb( null );
 }
 
+function ldaDoc(doc, topics, terms, cb) {
+	var docs = doc.replace(/\n/gm,"").match( /[^\.!\?]+[\.!\?]+/g );
+	cb( LDA( docs , topics||2, terms||2 ) );
+}
+
 function anlpDoc(doc,cb) {
 
 	var 
@@ -688,6 +711,12 @@ function anlpDoc(doc,cb) {
 }
 
 function snlpDoc(doc,cb) {
+	var stanford = READ.stanford;
+	
+	( async() => {
+		var nlp = await stanford.process("en", doc );
+		cb( nlp );
+	}) ();
 }
 
 /*
