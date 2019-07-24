@@ -131,8 +131,10 @@ function config_Reader (sql) {
 				relevance: 0,
 				actors: 0,
 				links: 0,
-				agree: 0,
-				weight: 0
+				agreement: 0,
+				weight: 0,
+				topic: "",
+				level: 0
 			};
 
 		try {
@@ -590,7 +592,7 @@ function Reader(sql,path,cb) {
 						link = "",
 						actors = [],
 						classifs = [],
-						agree = 0,
+						agreement = 0,
 						weight = 0;
 					
 					classif.forEach( (cls,n) => classifs[n] = cls.getClassifications(frag) );
@@ -627,18 +629,18 @@ function Reader(sql,path,cb) {
 						ids.links[link] = count.links++;
 
 					var ref = classifs[0][0];
-					classifs.forEach( clsif => { 
-						if ( clsif[0].label == ref.label ) agree++; 
-						weight += clsif[0].value;
+					classifs.forEach( classif => { 
+						if ( classif[0].label == ref.label ) agreement++; 
+						weight += classif[0].value;
 					});
 					
 					scores.push({
 						pos: tags.join(";"),
 						frag: frag,
 						topic: ref.label,
-						classif: classifs,
+						classif: ref,
 						tokens: tokens,
-						agree: agree / classifs.length,
+						agreement: agreement / classifs.length,
 						weight: weight,
 						stems: stems,
 						sentiment: sentiment,
@@ -656,6 +658,11 @@ function Reader(sql,path,cb) {
 						dag.add( ids.actors[ant], targetid, score.sentiment );
 					});
 				
+				if ( score.classif.value > metrics.level ) {
+					metrics.level = score.classif.value;
+					metrics.topic = score.classif.label;
+				}
+				
 				metrics.sentiment += score.sentiment;
 				for (var n=0,rel=score.relevance,N=rel.length; n<N; n++) 
 					if (rel.charAt(n) == "y") metrics.relevance += 1;
@@ -663,7 +670,7 @@ function Reader(sql,path,cb) {
 				if ( score.link ) metrics.links += 1;
 				metrics.actors += targetid ? score.ants.length + 1 : 0;
 				metrics.weight += score.weight;
-				metrics.agree += score.agree;
+				metrics.agreement += score.agreement;
 			});
 			
 			cb(metrics, scores);
