@@ -119,7 +119,8 @@ function configReader (sql) {
 		});
 	}
 	
-	else {	// initial config to avoid whacky ANLP Array conflicts
+	else 
+	if ( !READ.checker ) {	// initial config to avoid whacky ANLP Array conflicts
 		var
 			Classifier = [ANLP.BayesClassifier, ANLP.LogisticRegressionClassifier],
 			Checker = ANLP.Spellcheck,
@@ -206,8 +207,11 @@ function xls_Reader(sql,path,cb) {
 
 function txt_Reader(sql,path,cb) {
 	try {
-		cb( FS.readFileSync( "."+path,'utf8') );
-	} catch (err) {};
+		cb( FS.readFileSync( path,'utf8') );
+	} 
+	catch (err) {
+		cb( "" );
+	};
 }
 
 function odp_Reader(sql,path,cb) {	
@@ -651,7 +655,7 @@ function anlpDoc(doc,cb) {
 				weight: weight,
 				stems: stems,
 				sentiment: sentiment,
-				linkage: link,
+				link: link,
 				target: actors[actors.length-1],
 				ants: actors.slice(0,actors.length-1),
 				relevance: relevance
