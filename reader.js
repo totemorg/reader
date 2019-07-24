@@ -40,8 +40,9 @@ var
 
 var 										// totem bindings
 	READ = module.exports = {
-		config	: config_Reader,
-		reader	: Reader,
+		config	: configReader,
+		readFile: readFile,
+		nlpDoc: nlpDoc,
 		enabled : true,
 		paths: {
 			nlpCorpus: "./nlp_corpus.txt",
@@ -67,7 +68,7 @@ var 										// totem bindings
 		}
 	};
 
-function config_Reader (sql) {
+function configReader (sql) {
 	var 
 		recs = 0,
 		classif = READ.classif,
@@ -153,17 +154,63 @@ function config_Reader (sql) {
 	}
 }
 
-function Reader(sql,path,cb) {
+function readFile(sql, path, cb) {
 	/*
 	function db_Reader(sql,path,cb) {
 		sql.query("SELECT * FROM ??", path, function (recs) {
 			cb(JSON.stringify(recs));
 		});
 	} */
-
 	/*
 	function jpg_Reader(sql,path,cb) {		
 	} */
+	/*
+	function py_Reader(sql,path,cb) {
+		try {
+			sql.query("UPDATE engines SET ? WHERE least(?)",[
+					{Code:FS.readFileSync(path,'utf8')},
+					{Name:job, Engine:"python"}]);
+		} catch (err) {};
+	}
+
+	function js_Reader(sql,path,cb) {
+		try {
+			sql.query("UPDATE engines SET ? WHERE least(?)",[
+					{Code:FS.readFileSync(path,'utf8')},
+					{Name:job, Engine:"js"}]);
+		} catch (err) {};
+
+	}
+
+	function jade_Reader(sql,path,cb) {
+		try {
+			sql.query("UPDATE engines SET ? WHERE least(?)",[
+					{Code:FS.readFileSync(path,'utf8')},
+					{Name:job, Engine:"jade"}]);
+		} catch (err) {};
+
+	}
+	*/
+	/*
+	function idop_Reader(sql,path,cb) {	
+		// area contains parms and is used to start the swag workflow
+		var env = process.env,
+			parms = {
+				size: parseFloat(env.SIZE),
+				pixels: parseInt(env.PIXELS),
+				scale: parseFloat(env.SCALE),
+				step: parseFloat(env.STEP),
+				range: parseFloat(env.RANGE),
+				detects: parseInt(env.DETECTS),
+				infile: path,
+				outfile: ""
+			};
+
+		HACK.workflow(sql, parms, function (chip,dets) {
+			cb(dets);
+		}); 
+	}
+	*/
 
 	function xls_Reader(sql,path,cb) {
 		var 
@@ -202,34 +249,6 @@ function Reader(sql,path,cb) {
 			cb( FS.readFileSync( "."+path,'utf8') );
 		} catch (err) {};
 	}
-
-	/*
-	function py_Reader(sql,path,cb) {
-		try {
-			sql.query("UPDATE engines SET ? WHERE least(?)",[
-					{Code:FS.readFileSync(path,'utf8')},
-					{Name:job, Engine:"python"}]);
-		} catch (err) {};
-	}
-
-	function js_Reader(sql,path,cb) {
-		try {
-			sql.query("UPDATE engines SET ? WHERE least(?)",[
-					{Code:FS.readFileSync(path,'utf8')},
-					{Name:job, Engine:"js"}]);
-		} catch (err) {};
-
-	}
-
-	function jade_Reader(sql,path,cb) {
-		try {
-			sql.query("UPDATE engines SET ? WHERE least(?)",[
-					{Code:FS.readFileSync(path,'utf8')},
-					{Name:job, Engine:"jade"}]);
-		} catch (err) {};
-
-	}
-	*/
 
 	function odp_Reader(sql,path,cb) {	
 	}
@@ -519,27 +538,6 @@ function Reader(sql,path,cb) {
 			});
 		});
 	}
-
-	/*
-	function idop_Reader(sql,path,cb) {	
-		// area contains parms and is used to start the swag workflow
-		var env = process.env,
-			parms = {
-				size: parseFloat(env.SIZE),
-				pixels: parseInt(env.PIXELS),
-				scale: parseFloat(env.SCALE),
-				step: parseFloat(env.STEP),
-				range: parseFloat(env.RANGE),
-				detects: parseInt(env.DETECTS),
-				infile: path,
-				outfile: ""
-			};
-
-		HACK.workflow(sql, parms, function (chip,dets) {
-			cb(dets);
-		}); 
-	}
-	*/
 	
 	var 
 		readers = {
@@ -562,122 +560,128 @@ function Reader(sql,path,cb) {
 		parts = path.split("."),
 		type = parts.pop();
 
-	if (reader = readers[type])
-		reader(sql, path, text => {
-			var 
-				rubric = READ.spellRubric,
-				classif = READ.classif,
-				paths = READ.paths,
-				checker = READ.checker, 
-				analyzer = READ.analyzer,
-				tokenizer = READ.tokenizer,
-				stemmer = READ.stemmer,
-				rules = READ.rules,
-				lexicon = READ.lexicon,
-				tagger = READ.tagger,
-				scores = [],
-				frags = text.replace(/\n/gm,"").match( /[^\.!\?]+[\.!\?]+/g ),
-				metrics = READ.metrics,
-				entities = metrics.entities,
-				count = metrics.count,
-				ids = metrics.ids,
-				dag = metrics.dag;
-
-			frags.forEach( frag => {
-				if (frag) {
-					var 
-						tokens = tokenizer.tokenize(frag),
-						stems = [],
-						relevance = "",
-						link = "",
-						actors = [],
-						classifs = [],
-						agreement = 0,
-						weight = 0;
-					
-					classif.forEach( (cls,n) => classifs[n] = cls.getClassifications(frag) );
-					tokens.forEach( token => stems.push( stemmer(token) ) );
-					stems.forEach( stem => relevance += checker.isCorrect(stem) ? "y" : "n" );
-
-					try {
-						var sentiment = analyzer.getSentiment(tokens);
-					}
-					catch (err) {
-						var sentiment = err+"";
-					}
-
-					try {
-						var tags = tagger.tag(tokens).taggedWords;
-						tags.forEach( (tag,n) => tags[n] = tag.tag );
-					}
-					catch (err) {
-						var tags = [err+""];
-					}
-
-					tags.forEach( (tag,n) => { 
-						if ( tag.startsWith("VB") ) link += tokens[n]; 
-						else
-						if ( tag.startsWith("?") ) actors.push( tokens[n] );
-					});
-
-					actors.forEach( actor => {
-						if ( !entities.addString( "Actor:"+actor ) )
-							ids.actors[actor] = count.actors++;
-					});
-					
-					if ( !entities.addString( "Link:"+link ) )
-						ids.links[link] = count.links++;
-
-					var ref = classifs[0][0];
-					classifs.forEach( classif => { 
-						if ( classif[0].label == ref.label ) agreement++; 
-						weight += classif[0].value;
-					});
-					
-					scores.push({
-						pos: tags.join(";"),
-						frag: frag,
-						topic: ref.label,
-						classif: ref,
-						tokens: tokens,
-						agreement: agreement / classifs.length,
-						weight: weight,
-						stems: stems,
-						sentiment: sentiment,
-						link: link,
-						target: actors[actors.length-1],
-						ants: actors.slice(0,actors.length-1),
-						relevance: relevance
-					});
-				}
-			});
-
-			scores.forEach( score => {
-				if ( targetid = ids.actors[score.target] )
-					score.ants.forEach( ant => {
-						dag.add( ids.actors[ant], targetid, score.sentiment );
-					});
-				
-				if ( score.classif.value > metrics.level ) {
-					metrics.level = score.classif.value;
-					metrics.topic = score.classif.label;
-				}
-				
-				metrics.sentiment += score.sentiment;
-				for (var n=0,rel=score.relevance,N=rel.length; n<N; n++) 
-					if (rel.charAt(n) == "y") metrics.relevance += 1;
-				
-				if ( score.link ) metrics.links += 1;
-				metrics.actors += targetid ? score.ants.length + 1 : 0;
-				metrics.weight += score.weight;
-				metrics.agreement += score.agreement;
-			});
-			
-			cb(metrics, scores);
-		});
+	if ( reader = readers[type] )
+		reader(sql, path, cb);
 	
+	else
+		cb( null );
 }
-	
+
+function nlpDoc(doc,cb) {
+
+	var 
+		rubric = READ.spellRubric,
+		classif = READ.classif,
+		paths = READ.paths,
+		checker = READ.checker, 
+		analyzer = READ.analyzer,
+		tokenizer = READ.tokenizer,
+		stemmer = READ.stemmer,
+		rules = READ.rules,
+		lexicon = READ.lexicon,
+		tagger = READ.tagger,
+		metrics = READ.metrics,
+		entities = metrics.entities,
+		count = metrics.count,
+		ids = metrics.ids,
+		dag = metrics.dag,
+
+		scores = [],
+		frags = doc.replace(/\n/gm,"").match( /[^\.!\?]+[\.!\?]+/g );
+
+	frags.forEach( frag => {
+		if (frag) {
+			var 
+				tokens = tokenizer.tokenize(frag),
+				stems = [],
+				relevance = "",
+				link = "",
+				actors = [],
+				classifs = [],
+				agreement = 0,
+				weight = 0;
+
+			classif.forEach( (cls,n) => classifs[n] = cls.getClassifications(frag) );
+			tokens.forEach( token => stems.push( stemmer(token) ) );
+			stems.forEach( stem => relevance += checker.isCorrect(stem) ? "y" : "n" );
+
+			try {
+				var sentiment = analyzer.getSentiment(tokens);
+			}
+			catch (err) {
+				var sentiment = err+"";
+			}
+
+			try {
+				var tags = tagger.tag(tokens).taggedWords;
+				tags.forEach( (tag,n) => tags[n] = tag.tag );
+			}
+			catch (err) {
+				var tags = [err+""];
+			}
+
+			tags.forEach( (tag,n) => { 
+				if ( tag.startsWith("VB") ) link += tokens[n]; 
+				else
+				if ( tag.startsWith("?") ) actors.push( tokens[n] );
+			});
+
+			actors.forEach( actor => {
+				if ( !entities.addString( "Actor:"+actor ) )
+					ids.actors[actor] = count.actors++;
+			});
+
+			if ( !entities.addString( "Link:"+link ) )
+				ids.links[link] = count.links++;
+
+			var ref = classifs[0][0];
+			classifs.forEach( classif => { 
+				if ( classif[0].label == ref.label ) agreement++; 
+				weight += classif[0].value;
+			});
+
+			scores.push({
+				pos: tags.join(";"),
+				frag: frag,
+				topic: ref.label,
+				classif: ref,
+				tokens: tokens,
+				agreement: agreement / classifs.length,
+				weight: weight,
+				stems: stems,
+				sentiment: sentiment,
+				linkage: link,
+				target: actors[actors.length-1],
+				ants: actors.slice(0,actors.length-1),
+				relevance: relevance
+			});
+		}
+	});
+
+	scores.forEach( score => {
+		if ( targetid = ids.actors[score.target] )
+			score.ants.forEach( ant => {
+				dag.add( ids.actors[ant], targetid, score.sentiment );
+			});
+
+		if ( score.classif.value > metrics.level ) {
+			metrics.level = score.classif.value;
+			metrics.topic = score.classif.label;
+		}
+
+		metrics.sentiment += score.sentiment;
+		for (var n=0,rel=score.relevance,N=rel.length; n<N; n++) 
+			if (rel.charAt(n) == "y") metrics.relevance += 1;
+
+		if ( score.link ) metrics.links += 1;
+		metrics.actors += targetid ? score.ants.length + 1 : 0;
+		metrics.weight += score.weight;
+		metrics.agreement += score.agreement;
+	});
+
+	cb(metrics, scores);
+}
+
 /*
 [
 	function cleaner() {	
