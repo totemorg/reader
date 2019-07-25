@@ -153,27 +153,7 @@ function configReader (sql) {
 			stemmer = READ.stemmer = Stemmer.stem,
 			rules = READ.rules = new ANLP.RuleSet(paths.nlpRuleset),
 			lexicon = READ.lexicon = new ANLP.Lexicon(paths.nlpLexicon, "?"),
-			tagger = READ.tagger = new ANLP.BrillPOSTagger(lexicon,rules),
-			metrics = READ.metrics = {
-				entities: new ANLP.Trie(false),
-				count: {
-					links: 0,
-					actors: 0
-				},
-				ids: {
-					links: {},
-					actors: {}
-				},
-				dag: new ANLP.EdgeWeightedDigraph(),
-				sentiment: 0,
-				relevance: 0,
-				actors: 0,
-				links: 0,
-				agreement: 0,
-				weight: 0,
-				topic: "",
-				level: 0
-			};
+			tagger = READ.tagger = new ANLP.BrillPOSTagger(lexicon,rules);
 
 		try {
 			var classif = READ.classif = [];
@@ -188,6 +168,7 @@ function configReader (sql) {
 			});
 		}
 			
+		stanford.addNamedEntityText(["DTO", "CTO", "hawk", "lieutenant", "police officer", "politician", "officer", "suspect", "windows", "OS"]);
 	}
 }
 
@@ -590,12 +571,55 @@ function readFile(sql, path, cb) {
 		cb( null );
 }
 
-function ldaDoc(doc, topics, terms, cb) {
+function sumScores(scores, metrics) {
+	var 
+		entities = metrics.entities,
+		count = metrics.count,
+		ids = metrics.ids,
+		dag = metrics.dag;
+	
+	scores.forEach( score => {
+		/*
+		if ( targetid = ids.actors[score.actors[score.actors.length-1]] )
+			score.ants.forEach( ant => {
+				dag.add( ids.actors[ant], targetid, score.sentiment );
+			});  */
+
+		if ( score.classif.value > metrics.level ) {
+			metrics.level = score.classif.value;
+			metrics.topic = score.classif.label;
+		}
+
+		metrics.sentiment += score.sentiment;
+		for (var n=0,rel=score.relevance,N=rel.length; n<N; n++) 
+			if (rel.charAt(n) == "y") metrics.relevance += 1;
+
+		metrics.weight += score.weight;
+		metrics.agreement += score.agreement;
+		
+		score.actors.forEach( actor => {
+			if ( !entities.addString( "Actor:"+actor ) ) {
+				ids.actors[actor] = count.actors++;
+				metrics.actors.push(actor);
+			}
+		});
+
+		score.links.forEach( link => {
+			if ( !entities.addString( "Link:"+link ) ) {
+				ids.links[link] = count.links++;
+				metrics.links.push(link);
+			}
+		});	
+		
+	}); 
+}
+
+function ldaDoc(doc, topics, terms, cb) {	// laten dirichlet doc analysis
 	var docs = doc.replace(/\n/gm,"").match( /[^\.!\?]+[\.!\?]+/g );
 	cb( LDA( docs , topics||2, terms||2 ) );
 }
 
-function anlpDoc(doc,cb) {
+function anlpDoc(doc, cb) {	// homebrew NER
 
 	var 
 		rubric = READ.spellRubric,
@@ -608,14 +632,29 @@ function anlpDoc(doc,cb) {
 		rules = READ.rules,
 		lexicon = READ.lexicon,
 		tagger = READ.tagger,
-		metrics = READ.metrics,
-		entities = metrics.entities,
-		count = metrics.count,
-		ids = metrics.ids,
-		dag = metrics.dag,
-
+		metrics = {
+			entities: new ANLP.Trie(false),
+			count: {
+				links: 0,
+				actors: 0
+			},
+			ids: {
+				links: {},
+				actors: {}
+			},
+			dag: new ANLP.EdgeWeightedDigraph(),
+			actors: [],
+			links: [],			
+			sentiment: 0,
+			relevance: 0,
+			agreement: 0,
+			weight: 0,
+			topic: "",
+			level: 0
+		},
+		
 		scores = [],
-		frags = doc.replace(/\n/gm,"").match( /[^\.!\?]+[\.!\?]+/g );
+		frags = doc.replace(/\n/g,"").match( /[^\.!\?]+[\.!\?]+/g );
 
 	frags.forEach( frag => {
 		if (frag) {
@@ -623,7 +662,7 @@ function anlpDoc(doc,cb) {
 				tokens = tokenizer.tokenize(frag),
 				stems = [],
 				relevance = "",
-				link = "",
+				links = [],
 				actors = [],
 				classifs = [],
 				agreement = 0,
@@ -649,18 +688,10 @@ function anlpDoc(doc,cb) {
 			}
 
 			tags.forEach( (tag,n) => { 
-				if ( tag.startsWith("VB") ) link += tokens[n]; 
+				if ( tag.startsWith("VB") ) links.push( tokens[n] ); 
 				else
 				if ( tag.startsWith("?") ) actors.push( tokens[n] );
 			});
-
-			actors.forEach( actor => {
-				if ( !entities.addString( "Actor:"+actor ) )
-					ids.actors[actor] = count.actors++;
-			});
-
-			if ( !entities.addString( "Link:"+link ) )
-				ids.links[link] = count.links++;
 
 			var ref = classifs[0][0];
 			classifs.forEach( classif => { 
@@ -678,45 +709,74 @@ function anlpDoc(doc,cb) {
 				weight: weight,
 				stems: stems,
 				sentiment: sentiment,
-				link: link,
-				target: actors[actors.length-1],
-				ants: actors.slice(0,actors.length-1),
+				links: links,
+				actors: actors,
 				relevance: relevance
 			});
 		}
 	});
 
-	scores.forEach( score => {
-		if ( targetid = ids.actors[score.target] )
-			score.ants.forEach( ant => {
-				dag.add( ids.actors[ant], targetid, score.sentiment );
-			});
-
-		if ( score.classif.value > metrics.level ) {
-			metrics.level = score.classif.value;
-			metrics.topic = score.classif.label;
-		}
-
-		metrics.sentiment += score.sentiment;
-		for (var n=0,rel=score.relevance,N=rel.length; n<N; n++) 
-			if (rel.charAt(n) == "y") metrics.relevance += 1;
-
-		if ( score.link ) metrics.links += 1;
-		metrics.actors += targetid ? score.ants.length + 1 : 0;
-		metrics.weight += score.weight;
-		metrics.agreement += score.agreement;
-	});
-
+	sumScores( scores, metrics );	
 	cb(metrics, scores);
 }
 
-function snlpDoc(doc,cb) {
-	var stanford = READ.stanford;
+function snlpDoc(doc,cb) {	// stanford NER
+	var 
+		stanford = READ.stanford,
+		frags = doc.replace(/\n/g,"").match( /[^\.!\?]+[\.!\?]+/g );
 	
-	( async() => {
-		var nlp = await stanford.process("en", doc );
-		cb( nlp );
-	}) ();
+		var 
+			metrics = {
+				entities: new ANLP.Trie(false),
+				count: {
+					links: 0,
+					actors: 0
+				},
+				ids: {
+					links: {},
+					actors: {}
+				},
+				dag: new ANLP.EdgeWeightedDigraph(),
+				actors: [],
+				links: [],
+				sentiment: 0,
+				relevance: 0,
+				agreement: 0,
+				weight: 0,
+				topic: "",
+				level: 0
+			},
+			entities = metrics.entities,
+			count = metrics.count,
+			ids = metrics.ids,
+			dag = metrics.dag,		
+			scores = [], 
+			nlps = [],
+			done = 0;
+
+		frags.forEach( frag => {
+			( async() => {
+				var nlp = await stanford.process("en", frag);
+				nlps.push( nlp );
+				var actors = []; nlp.entities.forEach( ent => actors.push( ent.utteranceText ) );
+				scores.push({
+					classif: {value: nlp.score, label: nlp.intent},
+					sentiment: nlp.sentiment.score,
+					relevance: "",
+					agreement: 1,
+					topic: nlp.intent,
+					links: ["related"], // nlp.actions ?
+					actors: actors,
+					weight: 1
+				});
+				if ( ++done == frags.length ) {
+					sumScores( scores, metrics );
+					cb(metrics, nlps);
+				}
+			}) ();
+		});
+
+		if ( !frags.length ) cb(metrics, scores);
 }
 
 /*
