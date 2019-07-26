@@ -209,6 +209,7 @@ function txt_Reader(sql,path,cb) {
 		cb( FS.readFileSync( path,'utf8') );
 	} 
 	catch (err) {
+		Log(err);
 		cb( "" );
 	};
 }
@@ -654,7 +655,7 @@ function anlpDoc(doc, cb) {	// homebrew NER
 		},
 		
 		scores = [],
-		frags = doc.replace(/\n/g,"").match( /[^\.!\?]+[\.!\?]+/g );
+		frags = doc.replace(/\n/g,"").match( /[^\.!\?]+[\.!\?]+/g ) || [];
 
 	frags.forEach( frag => {
 		if (frag) {
@@ -723,7 +724,7 @@ function anlpDoc(doc, cb) {	// homebrew NER
 function snlpDoc(doc,cb) {	// stanford NER
 	var 
 		stanford = READ.stanford,
-		frags = doc.replace(/\n/g,"").match( /[^\.!\?]+[\.!\?]+/g );
+		frags = doc.replace(/\n/g,"").match( /[^\.!\?]+[\.!\?]+/g ) || [];
 	
 		var 
 			metrics = {
@@ -855,6 +856,5 @@ switch ( process.argv[2] ) { //< unit tests
 		Log("unit test with 'node reader.js [R1 || R2 || ...]'");
 		break;	
 }
-
 
 // UNCLASSIFIED
