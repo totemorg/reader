@@ -1,4 +1,13 @@
 // UNCLASSIFIED
+//  https://towardsdatascience.com/a-comparison-between-spacy-ner-stanford-ner-using-all-us-city-names-c4b6a547290
+// https://github.com/explosion/spacy-stanfordnlp
+// https://github.com/explosion/spaCy/issues/259
+// https://www.novetta.com/2018/08/evaluating-solutions-for-named-entity-recognition/
+// https://www.datacamp.com/community/blog/spacy-cheatsheet
+// https://towardsdatascience.com/a-comparison-between-spacy-ner-stanford-ner-using-all-us-city-names-c4b6a547290
+// https://towardsdatascience.com/a-review-of-named-entity-recognition-ner-using-automatic-summarization-of-resumes-5248a75de175
+// https://blog.exsilio.com/all/accuracy-precision-recall-f1-score-interpretation-of-performance-measures/
+// https://en.wikipedia.org/wiki/Precision_and_recall
 
 /**
  @requires enum
@@ -145,7 +154,7 @@ function configReader (sql) {
 			Trie = ANLP.Trie,
 			Stemmer = ANLP.PorterStemmer,
 			Analyzer = ANLP.SentimentAnalyzer,
-			Tokenizer = ANLP.TreebankWordTokenizer, //ANLP.WordTokenizer,
+			Tokenizer = ANLP.WordTokenizer, //ANLP.WordTokenizer,
 			corpus = FS.readFileSync( paths.nlpCorpus, "utf8" ).replace(/^-/g,"").replace(/\n/gm," ").split(" "),
 			checker = READ.checker = new Checker( corpus, true ),
 			analyzer = READ.analyzer = new Analyzer("English", Stemmer, "pattern"),
@@ -661,9 +670,12 @@ function anlpDoc(doc, cb) {	// homebrew NER
 		if (frag) {
 			var 
 				tokens = tokenizer.tokenize(frag),
+				sentiment = analyzer.getSentiment(tokens),
+				tags = tagger.tag(tokens).taggedWords,
 				stems = [],
 				relevance = "",
 				links = [],
+				actor = "",
 				actors = [],
 				classifs = [],
 				agreement = 0,
@@ -672,27 +684,16 @@ function anlpDoc(doc, cb) {	// homebrew NER
 			classif.forEach( (cls,n) => classifs[n] = cls.getClassifications(frag) );
 			tokens.forEach( token => stems.push( stemmer(token) ) );
 			stems.forEach( stem => relevance += checker.isCorrect(stem) ? "y" : "n" );
-
-			try {
-				var sentiment = analyzer.getSentiment(tokens);
-			}
-			catch (err) {
-				var sentiment = err+"";
-			}
-
-			try {
-				var tags = tagger.tag(tokens).taggedWords;
-				tags.forEach( (tag,n) => tags[n] = tag.tag );
-			}
-			catch (err) {
-				var tags = [err+""];
-			}
+			tags.forEach( (tag,n) => tags[n] = tag.tag );
 
 			tags.forEach( (tag,n) => { 
-				if ( tag.startsWith("VB") ) links.push( tokens[n] ); 
-				else
-				if ( tag.startsWith("?") ) actors.push( tokens[n] );
+				if ( tag.startsWith("?") || tag.startsWith("NN") ) actor += tokens[n];
+				else {
+					if ( actor ) { actors.push( actor ); actor = ""; }
+					if ( tag.startsWith("VB") ) links.push( tokens[n] ); 
+				}
 			});
+			if ( actor ) actors.push( actor ); 
 
 			var ref = classifs[0][0];
 			classifs.forEach( classif => { 
@@ -704,7 +705,8 @@ function anlpDoc(doc, cb) {	// homebrew NER
 				pos: tags.join(";"),
 				frag: frag,
 				topic: ref.label,
-				classif: ref,
+				level: ref.value,
+				classifs: classifs,
 				tokens: tokens,
 				agreement: agreement / classifs.length,
 				weight: weight,
@@ -761,11 +763,12 @@ function snlpDoc(doc,cb) {	// stanford NER
 				nlps.push( nlp );
 				var actors = []; nlp.entities.forEach( ent => actors.push( ent.utteranceText ) );
 				scores.push({
-					classif: {value: nlp.score, label: nlp.intent},
+					classifs: [{value: nlp.score, label: nlp.intent}],
 					sentiment: nlp.sentiment.score,
 					relevance: "",
 					agreement: 1,
 					topic: nlp.intent,
+					level: nlp.score,
 					links: ["related"], // nlp.actions ?
 					actors: actors,
 					weight: 1
