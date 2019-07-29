@@ -1,5 +1,5 @@
 // UNCLASSIFIED
-//  https://towardsdatascience.com/a-comparison-between-spacy-ner-stanford-ner-using-all-us-city-names-c4b6a547290
+// https://towardsdatascience.com/a-comparison-between-spacy-ner-stanford-ner-using-all-us-city-names-c4b6a547290
 // https://github.com/explosion/spacy-stanfordnlp
 // https://github.com/explosion/spaCy/issues/259
 // https://www.novetta.com/2018/08/evaluating-solutions-for-named-entity-recognition/
@@ -8,6 +8,7 @@
 // https://towardsdatascience.com/a-review-of-named-entity-recognition-ner-using-automatic-summarization-of-resumes-5248a75de175
 // https://blog.exsilio.com/all/accuracy-precision-recall-f1-score-interpretation-of-performance-measures/
 // https://en.wikipedia.org/wiki/Precision_and_recall
+// https://nlp.stanford.edu/software/CRF-NER.html
 
 // https://sites.cs.ucsb.edu/~wychen/publications/plda-aaim09.pdf
 // https://bcatctr.github.io/paraLDA/
