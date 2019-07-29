@@ -9,6 +9,9 @@
 // https://blog.exsilio.com/all/accuracy-precision-recall-f1-score-interpretation-of-performance-measures/
 // https://en.wikipedia.org/wiki/Precision_and_recall
 
+// https://sites.cs.ucsb.edu/~wychen/publications/plda-aaim09.pdf
+// https://bcatctr.github.io/paraLDA/
+
 /**
  @requires enum
  @requires fs
@@ -74,7 +77,7 @@ var 										// totem bindings
 		enabled : true,
 		paths: {
 			nlpCorpus: "./nlp_corpus.txt",
-			nlpClasssifier: "./nlp_classifier.txt",
+			//nlpClasssifier: "./nlp_classifier.txt",
 			nlpRuleset: "./nlp_pos_rules.txt",
 			nlpLexicon: "./nlp_pos_lexicon.txt"
 		},
@@ -586,7 +589,8 @@ function sumScores(scores, metrics) {
 		entities = metrics.entities,
 		count = metrics.count,
 		ids = metrics.ids,
-		dag = metrics.dag;
+		topics = metrics.topics;
+		//dag = metrics.dag;
 	
 	scores.forEach( score => {
 		/*
@@ -595,15 +599,16 @@ function sumScores(scores, metrics) {
 				dag.add( ids.actors[ant], targetid, score.sentiment );
 			});  */
 
-		if ( score.classif.value > metrics.level ) {
-			metrics.level = score.classif.value;
-			metrics.topic = score.classif.label;
-		}
+		/*
+		if ( score.level > metrics.level ) {
+			metrics.level = score.level;
+			metrics.topic = score.topic;
+		}  */
 
 		metrics.sentiment += score.sentiment;
-		for (var n=0,rel=score.relevance,N=rel.length; n<N; n++) 
-			if (rel.charAt(n) == "y") metrics.relevance += 1;
+		//for (var n=0,rel=score.relevance,N=rel.length; n<N; n++)  if (rel.charAt(n) == "y") metrics.relevance++;
 
+		metrics.relevance += score.relevance;
 		metrics.weight += score.weight;
 		metrics.agreement += score.agreement;
 		
@@ -622,6 +627,7 @@ function sumScores(scores, metrics) {
 		});	
 		
 	}); 
+	
 }
 
 function ldaDoc(doc, topics, terms, cb) {	// laten dirichlet doc analysis
@@ -632,6 +638,8 @@ function ldaDoc(doc, topics, terms, cb) {	// laten dirichlet doc analysis
 function anlpDoc(doc, cb) {	// homebrew NER
 
 	var 
+		frags = doc.replace(/\n/g,"").match( /[^\.!\?]+[\.!\?]+/g ) || [],
+		
 		rubric = READ.spellRubric,
 		classif = READ.classif,
 		paths = READ.paths,
@@ -652,19 +660,20 @@ function anlpDoc(doc, cb) {	// homebrew NER
 				links: {},
 				actors: {}
 			},
-			dag: new ANLP.EdgeWeightedDigraph(),
 			actors: [],
 			links: [],			
 			sentiment: 0,
 			relevance: 0,
 			agreement: 0,
 			weight: 0,
-			topic: "",
+			topics: {},
 			level: 0
 		},
 		
 		scores = [],
-		frags = doc.replace(/\n/g,"").match( /[^\.!\?]+[\.!\?]+/g ) || [];
+		// dag: new ANLP.EdgeWeightedDigraph(),
+		freqs = new ANLP.TfIdf(),
+		topics = metrics.topics;
 
 	frags.forEach( frag => {
 		if (frag) {
@@ -681,9 +690,10 @@ function anlpDoc(doc, cb) {	// homebrew NER
 				agreement = 0,
 				weight = 0;
 
+			freqs.addDocument(frag);
 			classif.forEach( (cls,n) => classifs[n] = cls.getClassifications(frag) );
 			tokens.forEach( token => stems.push( stemmer(token) ) );
-			stems.forEach( stem => relevance += checker.isCorrect(stem) ? "y" : "n" );
+			//stems.forEach( stem => relevance += checker.isCorrect(stem) ? "y" : "n" );
 			tags.forEach( (tag,n) => tags[n] = tag.tag );
 
 			tags.forEach( (tag,n) => { 
@@ -701,11 +711,11 @@ function anlpDoc(doc, cb) {	// homebrew NER
 				weight += classif[0].value;
 			});
 
+			if ( ref.label in topics ) topics[ref.label] += ref.value; else topics[ref.label] = ref.label;
+			
 			scores.push({
 				pos: tags.join(";"),
 				frag: frag,
-				topic: ref.label,
-				level: ref.value,
 				classifs: classifs,
 				tokens: tokens,
 				agreement: agreement / classifs.length,
@@ -714,61 +724,65 @@ function anlpDoc(doc, cb) {	// homebrew NER
 				sentiment: sentiment,
 				links: links,
 				actors: actors,
-				relevance: relevance
+				relevance: 0
 			});
 		}
 	});
 
+	["DTO", "DTO cash"].forEach( find => {
+		freqs.tfidfs( find, (n,score) => scores[n].relevance += score );
+	});
+	
 	sumScores( scores, metrics );	
+	//Log(metrics);
 	cb(metrics, scores);
 }
 
 function snlpDoc(doc,cb) {	// stanford NER
 	var 
+		frags = doc.replace(/\n/g,"").match( /[^\.!\?]+[\.!\?]+/g ) || [],
+		
 		stanford = READ.stanford,
-		frags = doc.replace(/\n/g,"").match( /[^\.!\?]+[\.!\?]+/g ) || [];
-	
-		var 
-			metrics = {
-				entities: new ANLP.Trie(false),
-				count: {
-					links: 0,
-					actors: 0
-				},
-				ids: {
-					links: {},
-					actors: {}
-				},
-				dag: new ANLP.EdgeWeightedDigraph(),
-				actors: [],
-				links: [],
-				sentiment: 0,
-				relevance: 0,
-				agreement: 0,
-				weight: 0,
-				topic: "",
-				level: 0
+		metrics = {
+			entities: new ANLP.Trie(false),
+			count: {
+				links: 0,
+				actors: 0
 			},
-			entities = metrics.entities,
-			count = metrics.count,
-			ids = metrics.ids,
-			dag = metrics.dag,		
-			scores = [], 
-			nlps = [],
-			done = 0;
+			ids: {
+				links: {},
+				actors: {}
+			},
+			actors: [],
+			links: [],
+			sentiment: 0,
+			relevance: 0,
+			agreement: 0,
+			weight: 0,
+			topics: {},
+			level: 0
+		},
+		entities = metrics.entities,
+		count = metrics.count,
+		ids = metrics.ids,
+		topics = metrics.topics,
+		//dag = metrics.dag,		
+		scores = [], 
+		nlps = [],
+		done = 0;
 
 		frags.forEach( frag => {
 			( async() => {
 				var nlp = await stanford.process("en", frag);
 				nlps.push( nlp );
 				var actors = []; nlp.entities.forEach( ent => actors.push( ent.utteranceText ) );
+				if ( nlp.intent in topics ) topics[nlp.intent] += nlp.score; else topics[nlp.intent] = nlp.score;
+				
 				scores.push({
 					classifs: [{value: nlp.score, label: nlp.intent}],
 					sentiment: nlp.sentiment.score,
-					relevance: "",
+					relevance: 0,
 					agreement: 1,
-					topic: nlp.intent,
-					level: nlp.score,
 					links: ["related"], // nlp.actions ?
 					actors: actors,
 					weight: 1
