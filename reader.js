@@ -13,6 +13,13 @@
 // https://sites.cs.ucsb.edu/~wychen/publications/plda-aaim09.pdf
 // https://bcatctr.github.io/paraLDA/
 
+// GPU in spaCy
+// https://support.prodi.gy/t/will-a-gpu-make-training-faster/187
+
+// GPU vs CPU
+// https://discourse.julialang.org/t/how-much-faster-is-gpu-compare-to-cpu/17533
+// https://people.eecs.berkeley.edu/~sangjin/2013/02/12/CPU-GPU-comparison.html
+
 /**
  @requires enum
  @requires fs
