@@ -721,6 +721,7 @@ function anlpDoc(doc, cb) {	// homebrew NER
 
 			if ( ref.label in topics ) topics[ref.label] += ref.value; else topics[ref.label] = ref.label;
 			
+			//Log(frag, sentiment);
 			scores.push({
 				pos: tags.join(";"),
 				frag: frag,
@@ -742,7 +743,6 @@ function anlpDoc(doc, cb) {	// homebrew NER
 	});
 	
 	sumScores( scores, metrics );	
-	//Log(metrics);
 	cb(metrics, scores);
 }
 
