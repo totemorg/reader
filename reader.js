@@ -68,7 +68,8 @@ var 										// totem bindings
 			//js		: js_Reader,
 			//db		: db_Reader,
 			//jade	: jade_Reader,
-			xls	: xls_Reader,	
+			xls	: xls_Reader,
+			xlsx: xls_Reader,
 			txt		: txt_Reader,	
 			html	: html_Reader,
 			yql		: yql_Reader,
@@ -192,12 +193,11 @@ function configReader (sql) {
 	}
 }
 
-function xls_Reader(sql,path,cb) {
+function xls_Reader(path,cb) {
 	var 
-		sheets = EXCEL.parse(path),
-		recs = [];
+		sheets = EXCEL.parse(path);
 
-	if (sheets)
+	if (sheets) 
 		sheets.forEach( function (sheet, n) {  // sheet - no formulas allowed
 			var 
 				vars = new Array(sheet.maxCol),
@@ -208,10 +208,10 @@ function xls_Reader(sql,path,cb) {
 					rec = new Object({ID:j, sheet: sheet.name});
 
 				if ( j ) {
-					recs.push(rec);
 					row.forEach( function (cell, i) {
 						rec[vars[i]] = cell;
-					});
+					});					
+					cb(rec);
 				}
 
 				else   // 1st record is the header containing field names
@@ -221,23 +221,20 @@ function xls_Reader(sql,path,cb) {
 			});
 		});
 
-	cb(recs);
+	cb(null);
 }
 
-function txt_Reader(sql,path,cb) {
-	try {
-		cb( FS.readFileSync( path,'utf8') );
-	} 
-	catch (err) {
-		Log(err);
-		cb( "" );
-	};
+function txt_Reader(path,cb) {
+	FS.readFile( path, 'utf8', (err,txt) => {
+		if ( !err ) cb({ doc: txt });
+		cb( null );
+	});
 }
 
-function odp_Reader(sql,path,cb) {	
+function odp_Reader(path,cb) {	
 }
 
-function ods_Reader(sql,path,cb) {	
+function ods_Reader(path,cb) {	
 	UNO.convert(path, "ooxml", {output:"./tmps/"+path}, function (err,data) {
 		FS.readFile("./tmps/"+path, 'utf-8', function (err,data) {
 			XML2JS.parseString(data, function (err,json) {
@@ -252,12 +249,13 @@ console.log(table);
 //console.log(col);
 					}
 				}); });
+				cb(null);
 			});		
 		});
 	}); 
 }
 
-function odt_Reader(sql,path,cb) {	
+function odt_Reader(path,cb) {	
 
 	if (false) { 	// retains 1st image in folder=~/tmp
 		var handler = new XMLP.DefaultHandler(function (error, dom) {
@@ -304,14 +302,16 @@ function odt_Reader(sql,path,cb) {
 					Each(body["w:p"], function (n,para) {
 					Each(para["w:r"], function (n,recd) {
 					Each(recd["w:t"], function (n,text) {
-						cb({Text: text});
+						cb({doc: text});
 					}); }); }); });
+					
+					cb(null);
 				});					
 			});
 		}); 
 }
 
-function xml_Reader(sql,path,cb) { 
+function xml_Reader(path,cb) { 
 	FS.readFile(path,'utf-8', function (err,data) {
 		XML2JS.parseString(data, function (err,json) {
 			for (var n in json) console.log(json);
@@ -319,7 +319,7 @@ function xml_Reader(sql,path,cb) {
 	});
 }
 
-function pdf_Reader(sql,path,cb) {
+function pdf_Reader(path,cb) {
 	console.log("pdfrdr");
 
 	var PDF = new PDFP();
@@ -342,8 +342,11 @@ function pdf_Reader(sql,path,cb) {
 
 			console.log("PDF INGESTED "+npages+" pages "+text.length+" chars");
 
-			cb(text);
+			cb({doc:text});
 		}
+		
+		else
+			cb(null);
 	})
 	.on("pdfParser_dataError", function(evtData) {
 		console.log("PDF ERROR "+evtData.data);
@@ -354,7 +357,7 @@ function pdf_Reader(sql,path,cb) {
 	//PDF.loadPDF(path);
 }
 
-function html_Reader(sql,path,cb) {
+function html_Reader(path,cb) {
 
 	function reportify(File,Post) {
 		var Xlate = {
@@ -497,6 +500,8 @@ function html_Reader(sql,path,cb) {
 								}
 							});	
 						});
+						
+						cb(null);
 					});
 				}
 				else 
@@ -506,7 +511,7 @@ function html_Reader(sql,path,cb) {
 	});
 }
 
-function yql_Reader(sql,path,cb) { 
+function yql_Reader(path,cb) { 
 	var 
 		select = req.param('select'),
 		from = req.param('from'),
@@ -520,20 +525,21 @@ function yql_Reader(sql,path,cb) {
 		Each( recs, function (n,rec) {
 			cb(rec);
 		});
+		cb(null);
 	});
 }
 
 /*
-function db_Reader(sql,path,cb) {
+function db_Reader(path,cb) {
 	sql.query("SELECT * FROM ??", path, function (recs) {
 		cb(JSON.stringify(recs));
 	});
 } */
 /*
-function jpg_Reader(sql,path,cb) {		
+function jpg_Reader(path,cb) {		
 } */
 /*
-function py_Reader(sql,path,cb) {
+function py_Reader(path,cb) {
 	try {
 		sql.query("UPDATE engines SET ? WHERE least(?)",[
 				{Code:FS.readFileSync(path,'utf8')},
@@ -541,7 +547,7 @@ function py_Reader(sql,path,cb) {
 	} catch (err) {};
 }
 
-function js_Reader(sql,path,cb) {
+function js_Reader(path,cb) {
 	try {
 		sql.query("UPDATE engines SET ? WHERE least(?)",[
 				{Code:FS.readFileSync(path,'utf8')},
@@ -550,7 +556,7 @@ function js_Reader(sql,path,cb) {
 
 }
 
-function jade_Reader(sql,path,cb) {
+function jade_Reader(path,cb) {
 	try {
 		sql.query("UPDATE engines SET ? WHERE least(?)",[
 				{Code:FS.readFileSync(path,'utf8')},
@@ -560,7 +566,7 @@ function jade_Reader(sql,path,cb) {
 }
 */
 /*
-function idop_Reader(sql,path,cb) {	
+function idop_Reader(path,cb) {	
 	// area contains parms and is used to start the swag workflow
 	var env = process.env,
 		parms = {
@@ -580,229 +586,16 @@ function idop_Reader(sql,path,cb) {
 }
 */
 
-function readFile(sql, path, cb) {
+function readFile(path, cb) {
 	var 
 		parts = path.split("."),
 		type = parts.pop();
 
 	if ( reader = READ.readers[type] )
-		reader(sql, path, cb);
+		reader(path, cb);
 	
 	else
 		cb( null );
-}
-
-function sumScores(scores, metrics) {
-	var 
-		entities = metrics.entities,
-		count = metrics.count,
-		ids = metrics.ids,
-		topics = metrics.topics;
-		//dag = metrics.dag;
-	
-	scores.forEach( score => {
-		/*
-		if ( targetid = ids.actors[score.actors[score.actors.length-1]] )
-			score.ants.forEach( ant => {
-				dag.add( ids.actors[ant], targetid, score.sentiment );
-			});  */
-
-		/*
-		if ( score.level > metrics.level ) {
-			metrics.level = score.level;
-			metrics.topic = score.topic;
-		}  */
-
-		metrics.sentiment += score.sentiment;
-		//for (var n=0,rel=score.relevance,N=rel.length; n<N; n++)  if (rel.charAt(n) == "y") metrics.relevance++;
-
-		metrics.relevance += score.relevance;
-		metrics.weight += score.weight;
-		metrics.agreement += score.agreement;
-		
-		score.actors.forEach( actor => {
-			if ( !entities.addString( "Actor:"+actor ) ) {
-				ids.actors[actor] = count.actors++;
-				metrics.actors.push(actor);
-			}
-		});
-
-		score.links.forEach( link => {
-			if ( !entities.addString( "Link:"+link ) ) {
-				ids.links[link] = count.links++;
-				metrics.links.push(link);
-			}
-		});	
-		
-	}); 
-	
-}
-
-function ldaDoc(doc, topics, terms, cb) {	// laten dirichlet doc analysis
-	var docs = doc.replace(/\n/gm,"").match( /[^\.!\?]+[\.!\?]+/g );
-	cb( LDA( docs , topics||2, terms||2 ) );
-}
-
-function anlpDoc(doc, cb) {	// homebrew NER
-
-	var 
-		frags = doc.replace(/\n/g,"").match( /[^\.!\?]+[\.!\?]+/g ) || [],
-		
-		rubric = READ.spellRubric,
-		classif = READ.classif,
-		paths = READ.paths,
-		checker = READ.checker, 
-		analyzer = READ.analyzer,
-		tokenizer = READ.tokenizer,
-		stemmer = READ.stemmer,
-		rules = READ.rules,
-		lexicon = READ.lexicon,
-		tagger = READ.tagger,
-		metrics = {
-			entities: new ANLP.Trie(false),
-			count: {
-				links: 0,
-				actors: 0
-			},
-			ids: {
-				links: {},
-				actors: {}
-			},
-			actors: [],
-			links: [],			
-			sentiment: 0,
-			relevance: 0,
-			agreement: 0,
-			weight: 0,
-			topics: {},
-			level: 0
-		},
-		
-		scores = [],
-		// dag: new ANLP.EdgeWeightedDigraph(),
-		freqs = new ANLP.TfIdf(),
-		topics = metrics.topics;
-
-	frags.forEach( frag => {
-		if (frag) {
-			var 
-				tokens = tokenizer.tokenize(frag),
-				sentiment = analyzer.getSentiment(tokens),
-				tags = tagger.tag(tokens).taggedWords,
-				stems = [],
-				relevance = "",
-				links = [],
-				actor = "",
-				actors = [],
-				classifs = [],
-				agreement = 0,
-				weight = 0;
-
-			freqs.addDocument(frag);
-			classif.forEach( (cls,n) => classifs[n] = cls.getClassifications(frag) );
-			tokens.forEach( token => stems.push( stemmer(token) ) );
-			//stems.forEach( stem => relevance += checker.isCorrect(stem) ? "y" : "n" );
-			tags.forEach( (tag,n) => tags[n] = tag.tag );
-
-			tags.forEach( (tag,n) => { 
-				if ( tag.startsWith("?") || tag.startsWith("NN") ) actor += tokens[n];
-				else {
-					if ( actor ) { actors.push( actor ); actor = ""; }
-					if ( tag.startsWith("VB") ) links.push( tokens[n] ); 
-				}
-			});
-			if ( actor ) actors.push( actor ); 
-
-			var ref = classifs[0][0];
-			classifs.forEach( classif => { 
-				if ( classif[0].label == ref.label ) agreement++; 
-				weight += classif[0].value;
-			});
-
-			if ( ref.label in topics ) topics[ref.label] += ref.value; else topics[ref.label] = ref.label;
-			
-			//Log(frag, sentiment);
-			scores.push({
-				pos: tags.join(";"),
-				frag: frag,
-				classifs: classifs,
-				tokens: tokens,
-				agreement: agreement / classifs.length,
-				weight: weight,
-				stems: stems,
-				sentiment: sentiment,
-				links: links,
-				actors: actors,
-				relevance: 0
-			});
-		}
-	});
-
-	["DTO", "DTO cash"].forEach( find => {
-		freqs.tfidfs( find, (n,score) => scores[n].relevance += score );
-	});
-	
-	sumScores( scores, metrics );	
-	cb(metrics, scores);
-}
-
-function snlpDoc(doc,cb) {	// stanford NER
-	var 
-		frags = doc.replace(/\n/g,"").match( /[^\.!\?]+[\.!\?]+/g ) || [],
-		
-		stanford = READ.stanford,
-		metrics = {
-			entities: new ANLP.Trie(false),
-			count: {
-				links: 0,
-				actors: 0
-			},
-			ids: {
-				links: {},
-				actors: {}
-			},
-			actors: [],
-			links: [],
-			sentiment: 0,
-			relevance: 0,
-			agreement: 0,
-			weight: 0,
-			topics: {},
-			level: 0
-		},
-		entities = metrics.entities,
-		count = metrics.count,
-		ids = metrics.ids,
-		topics = metrics.topics,
-		//dag = metrics.dag,		
-		scores = [], 
-		nlps = [],
-		done = 0;
-
-		frags.forEach( frag => {
-			( async() => {
-				var nlp = await stanford.process("en", frag);
-				nlps.push( nlp );
-				var actors = []; nlp.entities.forEach( ent => actors.push( ent.utteranceText ) );
-				if ( nlp.intent in topics ) topics[nlp.intent] += nlp.score; else topics[nlp.intent] = nlp.score;
-				
-				scores.push({
-					classifs: [{value: nlp.score, label: nlp.intent}],
-					sentiment: nlp.sentiment.score,
-					relevance: 0,
-					agreement: 1,
-					links: ["related"], // nlp.actions ?
-					actors: actors,
-					weight: 1
-				});
-				if ( ++done == frags.length ) {
-					sumScores( scores, metrics );
-					cb(metrics, nlps);
-				}
-			}) ();
-		});
-
-		if ( !frags.length ) cb(metrics, scores);
 }
 
 /*
