@@ -80,9 +80,6 @@ var 										// totem bindings
 			xml		: xml_Reader
 		},			
 		readFile: readFile,
-		anlpDoc: anlpDoc,
-		snlpDoc: snlpDoc,
-		ldaDoc: ldaDoc,
 		enabled : true,
 		paths: {
 			nlpCorpus: "./nlp_corpus.txt",
@@ -98,6 +95,13 @@ var 										// totem bindings
 'Milenio sent some money to a DTO and Fred Smiley.',
 'Milenio conspired with Sinola to threaten and kill and butcher Dr Smiley.'
 		],
+		docFreqs: new ANLP.TfIdf(),
+		docTrie: new ANLP.Trie(false),
+		nlps: {
+			lda: ldaNLP, 
+			soa: soaNLP, 
+			nre: nreNLP
+		},
 		minTextLen : 10,				// Min text length to trigger indexing
 		minReadability : -9999,			// Min relevance score to trigger ANLP
 		minRelevance: 0.0, 				// Min ANLP relevance to tripper intake
@@ -108,6 +112,101 @@ var 										// totem bindings
 		}
 	};
 
+function ldaNLP(doc, topics, terms, cb) {	// laten dirichlet doc analysis
+	var docs = doc.replace(/\n/gm,"").match( /[^\.!\?]+[\.!\?]+/g );
+	cb( LDA( docs , topics||2, terms||2 ) );
+}
+
+function soaNLP(doc, metrics, cb) {	// homebrew NER
+
+	var 
+		rubric = READ.spellRubric,
+		classif = READ.classif,
+		paths = READ.paths,
+		checker = READ.checker, 
+		analyzer = READ.analyzer,
+		tokenizer = READ.tokenizer,
+		stemmer = READ.stemmer,
+		rules = READ.rules,
+		lexicon = READ.lexicon,
+		tagger = READ.tagger,
+		topics = metrics.topics;
+
+	var 
+		tokens = tokenizer.tokenize(doc),
+		sentiment = analyzer.getSentiment(tokens),
+		tags = tagger.tag(tokens).taggedWords,
+		stems = [],
+		relevance = "",
+		links = [],
+		actor = "",
+		actors = [],
+		classifs = [],
+		agreement = 0,
+		weight = 0;
+
+	classif.forEach( (cls,n) => classifs[n] = cls.getClassifications(doc) );
+	tokens.forEach( token => stems.push( stemmer(token) ) );
+	//stems.forEach( stem => relevance += checker.isCorrect(stem) ? "y" : "n" );
+	tags.forEach( (tag,n) => tags[n] = tag.tag );
+
+	tags.forEach( (tag,n) => { 
+		if ( tag.startsWith("?") || tag.startsWith("NN") ) actor += tokens[n];
+		else {
+			if ( actor ) { actors.push( actor ); actor = ""; }
+			if ( tag.startsWith("VB") ) links.push( tokens[n] ); 
+		}
+	});
+	if ( actor ) actors.push( actor ); 
+
+	var ref = classifs[0][0];
+	classifs.forEach( classif => { 
+		if ( classif[0].label == ref.label ) agreement++; 
+		weight += classif[0].value;
+	});
+
+	if ( ref.label in topics ) topics[ref.label] += ref.value; else topics[ref.label] = ref.value;
+
+	//Log(frag, sentiment);
+	cb({
+		pos: tags.join(";"),
+		classifs: classifs,
+		tokens: tokens,
+		agreement: agreement / classifs.length,
+		weight: weight,
+		stems: stems,
+		sentiment: sentiment,
+		links: links,
+		actors: actors,
+		relevance: 0
+	});
+}
+
+function nreNLP(doc, metrics, cb) {	// stanford NER
+	var 
+		stanford = READ.stanford,
+		entities = metrics.entities,
+		count = metrics.count,
+		topics = metrics.topics;
+
+	( async() => {
+		var stats = await stanford.process("en", doc);
+		var actors = []; stats.entities.forEach( ent => actors.push( ent.utteranceText ) );
+		if ( stats.intent in topics ) topics[stats.intent] += stats.score; else topics[stats.intent] = stats.score;
+
+		cb({
+			classifs: [{value: stats.score, label: stats.intent}],
+			sentiment: stats.sentiment.score,
+			relevance: 0,
+			agreement: 1,
+			links: ["related"], // stats.actions ?
+			actors: actors,
+			weight: 1,
+			stats: stats
+		});
+	}) ();
+}
+		
 function configReader (sql) {
 	var 
 		recs = 0,
