@@ -96,11 +96,11 @@ var 										// totem bindings
 'Milenio conspired with Sinola to threaten and kill and butcher Dr Smiley.'
 		],
 		docFreqs: new ANLP.TfIdf(),
-		docTrie: new ANLP.Trie(false),
+		docTrie: ANLP.Trie,
 		nlps: {
 			lda: ldaNLP, 
-			soa: soaNLP, 
-			nre: nreNLP
+			max: maxNLP, 
+			ner: nerNLP
 		},
 		minTextLen : 10,				// Min text length to trigger indexing
 		minReadability : -9999,			// Min relevance score to trigger ANLP
@@ -117,11 +117,19 @@ function ldaNLP(doc, topics, terms, cb) {	// laten dirichlet doc analysis
 	cb( LDA( docs , topics||2, terms||2 ) );
 }
 
-function soaNLP(doc, metrics, cb) {	// homebrew NER
+function maxNLP(doc, metrics, cb) {	// maximum entropy 
 
+	function flushActor() {
+		if ( actor )
+			if ( !entity.actors.addString( actor ) ) 
+				actors[actor] = {id: ids.actors++, type: "tbd"};
+		
+		actor = "";
+	}
+		
 	var 
 		rubric = READ.spellRubric,
-		classif = READ.classif,
+		classifier = READ.classifier,
 		paths = READ.paths,
 		checker = READ.checker, 
 		analyzer = READ.analyzer,
@@ -130,42 +138,52 @@ function soaNLP(doc, metrics, cb) {	// homebrew NER
 		rules = READ.rules,
 		lexicon = READ.lexicon,
 		tagger = READ.tagger,
-		topics = metrics.topics;
-
+		entity = metrics.entity,
+		topics = metrics.topics,
+		actors = metrics.actors,
+		ids = metrics.ids;
+	
 	var 
 		tokens = tokenizer.tokenize(doc),
 		sentiment = analyzer.getSentiment(tokens),
 		tags = tagger.tag(tokens).taggedWords,
 		stems = [],
 		relevance = "",
-		links = [],
 		actor = "",
-		actors = [],
 		classifs = [],
-		agreement = 0,
-		weight = 0;
+		agreement = 0;
 
-	classif.forEach( (cls,n) => classifs[n] = cls.getClassifications(doc) );
+	classifier.forEach( (cls,n) => classifs[n] = cls.getClassifications(doc) );
 	tokens.forEach( token => stems.push( stemmer(token) ) );
 	//stems.forEach( stem => relevance += checker.isCorrect(stem) ? "y" : "n" );
 	tags.forEach( (tag,n) => tags[n] = tag.tag );
 
-	tags.forEach( (tag,n) => { 
-		if ( tag.startsWith("?") || tag.startsWith("NN") ) actor += tokens[n];
-		else {
-			if ( actor ) { actors.push( actor ); actor = ""; }
-			if ( tag.startsWith("VB") ) links.push( tokens[n] ); 
-		}
+	tags.forEach( (tag,n) => {  // POS analysis
+		if ( tag.startsWith("?") || tag.startsWith("NN") ) 
+			actor += tokens[n];
+		
+		else 
+			flushActor();
+		
+		//else
+		//if ( tag.startsWith("VB") ) topics.push( tokens[n] ); 
 	});
-	if ( actor ) actors.push( actor ); 
+	flushActor();
 
-	var ref = classifs[0][0];
+	var topic = classifs[0][0].label, weight = 0;
 	classifs.forEach( classif => { 
-		if ( classif[0].label == ref.label ) agreement++; 
+		if ( classif[0].label == topic ) agreement++; 
 		weight += classif[0].value;
 	});
 
-	if ( ref.label in topics ) topics[ref.label] += ref.value; else topics[ref.label] = ref.value;
+	if ( !entity.topics.addString(topic) ) 
+		topics[topic] = {id: topics++, weight: weight}; 
+	
+	else
+		topics[topic].weight += weight;
+			
+	
+	//if ( ref.label in topics ) topics[ref.label] += ref.value; else topics[ref.label] = ref.value;
 
 	//Log(frag, sentiment);
 	cb({
@@ -173,35 +191,43 @@ function soaNLP(doc, metrics, cb) {	// homebrew NER
 		classifs: classifs,
 		tokens: tokens,
 		agreement: agreement / classifs.length,
-		weight: weight,
 		stems: stems,
 		sentiment: sentiment,
-		links: links,
-		actors: actors,
 		relevance: 0
 	});
 }
 
-function nreNLP(doc, metrics, cb) {	// stanford NER
+function nerNLP(doc, metrics, cb) {	// stanford NER
 	var 
 		stanford = READ.stanford,
-		entities = metrics.entities,
-		count = metrics.count,
-		topics = metrics.topics;
+		entity = metrics.entity,
+		actors = metrics.actors,
+		topics = metrics.topics,
+		ids = metrics.ids;
 
 	( async() => {
 		var stats = await stanford.process("en", doc);
-		var actors = []; stats.entities.forEach( ent => actors.push( ent.utteranceText ) );
-		if ( stats.intent in topics ) topics[stats.intent] += stats.score; else topics[stats.intent] = stats.score;
+		
+		stats.entities.forEach( ent => {
+			if ( actor = ent.utteranceText )
+				if ( !entity.actors.addString( actor) ) 
+					actors[actor] = {id: ids.actors++, type: "tbd"};
+			
+			//actors.push( ent.utteranceText ) 
+		});
+		
+		if ( topic = stats.intent )		
+			if ( topic in topics ) 
+				topics[topic].weight += stats.score; 
+
+			else 
+				topics[topic] = {id: ids.topics++, weight: stats.score}; 
 
 		cb({
 			classifs: [{value: stats.score, label: stats.intent}],
 			sentiment: stats.sentiment.score,
 			relevance: 0,
 			agreement: 1,
-			links: ["related"], // stats.actions ?
-			actors: actors,
-			weight: 1,
 			stats: stats
 		});
 	}) ();
@@ -211,7 +237,7 @@ function configReader (sql) {
 	var 
 		recs = 0,
 		stanford = READ.stanford,
-		classif = READ.classif,
+		classifier = READ.classifier,
 		paths = READ.paths;
 	
 	if (sql) {		// train and test nlp classifier
@@ -220,7 +246,7 @@ function configReader (sql) {
 			rules.forEach( rule => {
 				stanford.addDocument( "en", rule.Usecase, rule.Index );
 			
-				classif.forEach( cls => {
+				classifier.forEach( cls => {
 					cls.addDocument(rule.Usecase, rule.Index);
 				});
 			});
@@ -238,7 +264,7 @@ function configReader (sql) {
 					}) ();
 				}
 				
-				classif.forEach( (cls,n) => {
+				classifier.forEach( (cls,n) => {
 					cls.train();
 
 					if ( paths.nlpClasssifier )
@@ -246,7 +272,7 @@ function configReader (sql) {
 				});
 			
 				if ( trials = READ.trials) 
-					classif.forEach( (cls,n) => {
+					classifier.forEach( (cls,n) => {
 						trials.forEach( trial => {
 							Log(trial, `ANLP${n}=>`, cls.classify(trial));
 						});
@@ -276,15 +302,15 @@ function configReader (sql) {
 			tagger = READ.tagger = new ANLP.BrillPOSTagger(lexicon,rules);
 
 		try {
-			var classif = READ.classif = [];
+			var classifier = READ.classifier = [];
 			Classifier.forEach( (Cls,n) => {
-				classif[n] = Cls.restore(JSON.parse(FS.readFileSync(paths.nlpClasssifier+n)));
+				classifier[n] = Cls.restore(JSON.parse(FS.readFileSync(paths.nlpClasssifier+n)));
 			});
 		}
 		catch (err) {
-			var classif = READ.classif = [];
+			var classifier = READ.clasclassifiersif = [];
 			Classifier.forEach( (Cls,n) => {
-				classif[n] = new Cls();
+				classifier[n] = new Cls();
 			});
 		}
 			
