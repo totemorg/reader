@@ -121,8 +121,22 @@ function maxNLP(doc, metrics, cb) {	// maximum entropy
 
 	function flushActor() {
 		if ( actor )
-			if ( !entity.actors.addString( actor ) ) 
-				actors[actor] = {id: ids.actors++, type: "tbd"};
+			if ( !entity.actors.addString( actor ) ) {
+				var
+					neg = [ "" ],
+					phone = actor.match(/^[0-9\-]*/) || neg,
+					email = actor.match(/(.*)\@(.*)/) || neg,
+					cartel = actor.match(/(.*)\[(.*)\]$/) || actor.match(/(.*)cartel$/) || neg,
+					type = "tbd";
+				
+				switch (actor) {
+					case phone[0]: type = "phone"; break;
+					case email[0]: type = "email"; break;
+					case cartel[0]: type = "dto"; break;
+					default:  // check if in wordnet then derive from wordnet.def (republic, monarchy, city, state, etc)
+				}
+				
+				actors[actor] = {id: ids.actors++, type: type};
 		
 		actor = "";
 	}
