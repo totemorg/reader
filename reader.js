@@ -119,24 +119,28 @@ function ldaNLP(doc, topics, terms, cb) {	// laten dirichlet doc analysis
 
 function maxNLP(doc, metrics, cb) {	// maximum entropy 
 
-	function flushActor() {
+	function flushActor( dict ) {
 		if ( actor )
 			if ( !entity.actors.addString( actor ) ) {
 				var
-					neg = [ "" ],
-					phone = actor.match(/^[0-9\-]*/) || neg,
-					email = actor.match(/(.*)\@(.*)/) || neg,
-					cartel = actor.match(/(.*)\[(.*)\]$/) || actor.match(/(.*)cartel$/) || neg,
-					type = "tbd";
+					isPhone = actor.match(/^[0-9\-]*/)[0],
+					isEmail = actor.match(/(.*)\@(.*)/),
+					isCartel = actor.match(/(.*)\[(.*)\]$/) || actor.match("cartel"),
+					type = isPhone ? "phone" : isEmail ? "email" : isCartel ? "cartel" : "";
 				
-				switch (actor) {
-					case phone[0]: type = "phone"; break;
-					case email[0]: type = "email"; break;
-					case cartel[0]: type = "dto"; break;
-					default:  // check if in wordnet then derive from wordnet.def (republic, monarchy, city, state, etc)
-				}
+				if ( !type && dict )
+					dict.lookup(actor, recs => {
+						recs.forEach( rec => {
+							if ( rec.def.match("city") || rec.def.match("state") || rec.def.match("republic" ) ) type = "place";
+						});
+					});
+				
+				if ( !type ) type = "person";
 				
 				actors[actor] = {id: ids.actors++, type: type};
+				
+				Log( actor, actors[actor] );
+			}
 		
 		actor = "";
 	}
@@ -152,6 +156,7 @@ function maxNLP(doc, metrics, cb) {	// maximum entropy
 		rules = READ.rules,
 		lexicon = READ.lexicon,
 		tagger = READ.tagger,
+		dict = READ.dictionary,
 		entity = metrics.entity,
 		topics = metrics.topics,
 		actors = metrics.actors,
@@ -175,14 +180,14 @@ function maxNLP(doc, metrics, cb) {	// maximum entropy
 	tags.forEach( (tag,n) => {  // POS analysis
 		if ( tag.startsWith("?") || tag.startsWith("NN") ) 
 			actor += tokens[n];
-		
+
 		else 
-			flushActor();
+			flushActor(dict);
 		
 		//else
 		//if ( tag.startsWith("VB") ) topics.push( tokens[n] ); 
 	});
-	flushActor();
+	flushActor(dict);
 
 	var topic = classifs[0][0].label, weight = 0;
 	classifs.forEach( classif => { 
@@ -314,6 +319,7 @@ function configReader (sql) {
 			stemmer = READ.stemmer = Stemmer.stem,
 			rules = READ.rules = new ANLP.RuleSet(paths.nlpRuleset),
 			lexicon = READ.lexicon = new ANLP.Lexicon(paths.nlpLexicon, "?"),
+			dict = READ.dictionary = new ANLP.WordNet(),
 			tagger = READ.tagger = new ANLP.BrillPOSTagger(lexicon,rules);
 
 		try {
