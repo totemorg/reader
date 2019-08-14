@@ -177,7 +177,7 @@ function maxNLP(doc, metrics, cb) {	// maximum entropy
 	});
 
 	if ( !entity.topics.addString(topic) ) 
-		topics[topic] = {id: topics++, weight: weight}; 
+		topics[topic] = {id: ids.topics++, weight: weight}; 
 	
 	else
 		topics[topic].weight += weight;
@@ -209,6 +209,7 @@ function nerNLP(doc, metrics, cb) {	// stanford NER
 		var stats = await stanford.process("en", doc);
 		
 		stats.entities.forEach( ent => {
+			Log(ent);
 			if ( actor = ent.utteranceText )
 				if ( !entity.actors.addString( actor) ) 
 					actors[actor] = {id: ids.actors++, type: "tbd"};
@@ -217,11 +218,11 @@ function nerNLP(doc, metrics, cb) {	// stanford NER
 		});
 		
 		if ( topic = stats.intent )		
-			if ( topic in topics ) 
-				topics[topic].weight += stats.score; 
-
-			else 
+			if ( !entity.topics.addString( topic) ) 
 				topics[topic] = {id: ids.topics++, weight: stats.score}; 
+		
+			else
+				topics[topic].weight += stats.score; 
 
 		cb({
 			classifs: [{value: stats.score, label: stats.intent}],
@@ -308,7 +309,7 @@ function configReader (sql) {
 			});
 		}
 		catch (err) {
-			var classifier = READ.clasclassifiersif = [];
+			var classifier = READ.classifier = [];
 			Classifier.forEach( (Cls,n) => {
 				classifier[n] = new Cls();
 			});
