@@ -87,14 +87,14 @@ var 										// totem bindings
 			nlpRuleset: "./nlp_pos_rules.txt",
 			nlpLexicon: "./nlp_pos_lexicon.txt"
 		},
-		trials 	:  [  // nlp trials
+		trials 	: false ?  [  // nlp trials
 'Windows sucks.',
 'circular polarized beams are my favorite.',
 'Most regression algorithims are not experimental.',
 'hyperspectral data is great for detecting some things.',
 'Milenio sent some money to a DTO and Fred Smiley.',
 'Milenio conspired with Sinola to threaten and kill and butcher Dr Smiley.'
-		],
+		] : null,
 		docFreqs: new ANLP.TfIdf(),
 		docTrie: ANLP.Trie,
 		nlps: {
