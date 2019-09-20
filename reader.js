@@ -58,176 +58,71 @@ var
 	XML2JS = require("xml2js"),					// xml to json parser 	
 	UNO = require('unoconv'); 				// File converter/reader
 
-const { Copy,Each,Log } = require("enum");
-
 var 										// totem bindings
-	READ = module.exports = (opts,sql) => {
-		
-		Copy( opts || {} , READ, "." );
-		
-		var 
-			recs = 0,
-			stanford = READ.stanford,
-			classifier = READ.classifier,
-			paths = READ.paths;
-
-		if (sql) {		// train and test nlp classifier
-			sql.query('SELECT * FROM app.nlprules WHERE Enabled', (err,rules) => {
-
-				rules.forEach( rule => {
-					stanford.addDocument( "en", rule.Usecase, rule.Index );
-
-					classifier.forEach( cls => {
-						cls.addDocument(rule.Usecase, rule.Index);
-					});
-				});
-
-				if (rules.length) {
-					( async() => {
-						await stanford.train();
-						stanford.save();
-					}) ();
-
-					if ( trials = READ.trials) {
-						( async() => {
-							var test = await stanford.process("en", trials.join("") );
-							Log("SNLP", test);
-						}) ();
-					}
-
-					classifier.forEach( (cls,n) => {
-						cls.train();
-
-						if ( paths.nlpClasssifier )
-							cls.save(paths.nlpClasssifier+n, err => Log( err || "ANLP classifier saved" ) );
-					});
-
-					if ( trials = READ.trials) 
-						classifier.forEach( (cls,n) => {
-							trials.forEach( trial => {
-								Log(trial, `ANLP${n}=>`, cls.classify(trial));
-							});
-						});
-				}			
-			});
-		}
-
+	READ = module.exports = opts => {
 		// initial config to avoid whacky ANLP Array conflicts
-		Log("init start");
+		
+		if (opts) for (var key in opts) READ[key] = opts[key];
+		
 		var
+			paths = READ.paths,
 			Stanford = SNLP.NlpManager,
 			stanford = READ.stanford = new Stanford({ languages: ["en"] }),
 
 			Classifier = [ANLP.BayesClassifier, ANLP.LogisticRegressionClassifier],
-			Checker = ANLP.Spellcheck;
-		Log("trie start");
-		var	
-			Trie = ANLP.Trie;
-		Log("trie done");
-		var
+			Checker = ANLP.Spellcheck,
+			Trie = ANLP.Trie,
 			Stemmer = ANLP.PorterStemmer,
 			Analyzer = ANLP.SentimentAnalyzer,
-			Tokenizer = ANLP.WordTokenizer; //ANLP.WordTokenizer
-		
-		Log("paths", paths);
-		var
+			Tokenizer = ANLP.WordTokenizer, //ANLP.WordTokenizer
+
 			corpus = FS.readFileSync( paths.nlpCorpus, "utf8" ).replace(/^-/g,"").replace(/\n/gm," ").split(" ");
-		Log("checker corp=", corpus.length );
-		var
-			checker = READ.checker = new Checker( corpus, true );
-		Log("anal");
-		var
+
+		var				
+			checker = READ.checker = new ANLP.Spellcheck( corpus, true ),
 			analyzer = READ.analyzer = new Analyzer("English", Stemmer, "pattern"),
 			tokenizer = READ.tokenizer = new Tokenizer(),
-			stemmer = READ.stemmer = Stemmer.stem;
-		
-		Log("ruleset");
-		var
+			stemmer = READ.stemmer = Stemmer.stem,
+
 			rules = READ.rules = new ANLP.RuleSet(paths.nlpRuleset),
 			lexicon = READ.lexicon = new ANLP.Lexicon(paths.nlpLexicon, "?"),
 			dict = READ.dictionary = new ANLP.WordNet(),
 			tagger = READ.tagger = new ANLP.BrillPOSTagger(lexicon,rules);
 
-		Log("init done");
-		
-		try {
-			var classifier = READ.classifier = [];
-			Log( "class len", Classifier.length );
-			Classifier.forEach( (Cls,n) => {
-				Log("open", paths.nlpClasssifier, n);
-				classifier[n] = Cls.restore(JSON.parse(FS.readFileSync(paths.nlpClasssifier+n)));
-			});
-		}
-		
-		catch (err) {
-			Log("error", err);
+		if (false)
+			try {
+				var classifier = READ.classifier = [];
+				Classifier.forEach( (Cls,n) => {
+					classifier[n] = Cls.restore(JSON.parse(FS.readFileSync(paths.nlpClasssifier+n)));
+					console.log("nlp loaded", paths.nlpClasssifier, n);
+				});
+			}
+
+			catch (err) {
+				var classifier = READ.classifier = [];
+				Classifier.forEach( (Cls,n) => {
+					classifier[n] = new Cls();
+					console.log("nlp primed", paths.nlpClasssifier, n);
+				});
+			}
+
+		else {
 			var classifier = READ.classifier = [];
 			Classifier.forEach( (Cls,n) => {
 				classifier[n] = new Cls();
+				console.log("nlp primed", paths.nlpClasssifier, n);
 			});
 		}
-
+			
 		stanford.addNamedEntityText(["DTO", "CTO", "hawk", "lieutenant", "police officer", "politician", "officer", "suspect", "windows", "OS"]);
 	};
-
-Copy({		
-	readers: {
-		//idop	: idop_Reader,
-		//jpg		: jpg_Reader,
-		//py		: py_Reader,
-		//js		: js_Reader,
-		//db		: db_Reader,
-		//jade	: jade_Reader,
-		xls	: xls_Reader,
-		xlsx: xls_Reader,
-		txt		: txt_Reader,	
-		html	: html_Reader,
-		yql		: yql_Reader,
-		odt		: odt_Reader,
-		odp		: odp_Reader,
-		ods		: ods_Reader,
-		pdf		: pdf_Reader,
-		xml		: xml_Reader
-	},			
-	readFile: readFile,
-	enabled : true,
-	paths: {
-		nlpCorpus: "./nlp_corpus.txt",
-		nlpClasssifier: "./nlp_classifier.txt",
-		nlpRuleset: "./nlp_pos_rules.txt",
-		nlpLexicon: "./nlp_pos_lexicon.txt"
-	},
-	trials 	: false ?  [  // nlp trials
-'Windows sucks.',
-'circular polarized beams are my favorite.',
-'Most regression algorithims are not experimental.',
-'hyperspectral data is great for detecting some things.',
-'Milenio sent some money to a DTO and Fred Smiley.',
-'Milenio conspired with Sinola to threaten and kill and butcher Dr Smiley.'
-	] : null,
-	docFreqs: new ANLP.TfIdf(),
-	docTrie: ANLP.Trie,
-	nlps: {
-		lda: ldaNLP, 
-		max: maxNLP, 
-		ner: nerNLP
-	},
-	minTextLen : 10,				// Min text length to trigger indexing
-	minReadability : -9999,			// Min relevance score to trigger ANLP
-	minRelevance: 0.0, 				// Min ANLP relevance to tripper intake
-	spellRubric: {
-		"spelling": 3,
-		"suggestion": 1,
-		"grammar": 2
-	}
-}, READ);
 
 function ldaNLP(doc, topics, terms, cb) {	// laten dirichlet doc analysis
 	var docs = doc.replace(/\n/gm,"").match( /[^\.!\?]+[\.!\?]+/g );
 	cb( LDA( docs , topics||2, terms||2 ) );
 }
 
-function maxNLP(doc, metrics, cb) {	// maximum entropy 
+function mixNLP(doc, metrics, cb) {	// mixed (max entropy, logistic, naviave) NLP
 
 	function flushActor( dict ) {
 		if ( actor )
@@ -282,7 +177,10 @@ function maxNLP(doc, metrics, cb) {	// maximum entropy
 		classifs = [],
 		agreement = 0;
 
-	classifier.forEach( (cls,n) => classifs[n] = cls.getClassifications(doc) );
+	classifier.forEach( (cls,n) => {
+		Log(`class[${n}]=` + cls.constructor.name);
+		classifs[n] = cls.getClassifications(doc);
+	});
 	tokens.forEach( token => stems.push( stemmer(token) ) );
 	//stems.forEach( stem => relevance += checker.isCorrect(stem) ? "y" : "n" );
 	tags.forEach( (tag,n) => tags[n] = tag.tag );
@@ -829,7 +727,104 @@ function readFile(path, cb) {
 ].Extend(String);
 */
 
-READ(null);  // must do initial config as ANLP whacks Array prototypes
+READ({
+	train: rules => {
+		var 
+			recs = 0,
+			stanford = READ.stanford,
+			classifier = READ.classifier,
+			paths = READ.paths;
+
+		rules.forEach( rule => {
+			stanford.addDocument( "en", rule.Usecase, rule.Index );
+
+			classifier.forEach( cls => {
+				cls.addDocument(rule.Usecase, rule.Index);
+			});
+		});
+
+		if (rules.length) {
+			( async() => {
+				await stanford.train();
+				stanford.save();
+			}) ();
+
+			if ( trials = READ.trials) {
+				( async() => {
+					var test = await stanford.process("en", trials.join("") );
+					Log("SNLP", test);
+				}) ();
+			}
+
+			classifier.forEach( (cls,n) => {
+				cls.train();
+
+				if ( paths.nlpClasssifier ) {
+					cls.save(paths.nlpClasssifier+n, err => Log( err || "ANLP classifier saved" ) );
+					console.log("nlp saved",paths.nlpClasssifier+n );
+				}
+			});
+
+			if ( trials = READ.trials) 
+				classifier.forEach( (cls,n) => {
+					trials.forEach( trial => {
+						Log(trial, `ANLP${n}=>`, cls.classify(trial));
+					});
+				});
+		}			
+	},
+	readers: {
+			//idop	: idop_Reader,
+			//jpg		: jpg_Reader,
+			//py		: py_Reader,
+			//js		: js_Reader,
+			//db		: db_Reader,
+			//jade	: jade_Reader,
+			xls	: xls_Reader,
+			xlsx: xls_Reader,
+			txt		: txt_Reader,	
+			html	: html_Reader,
+			yql		: yql_Reader,
+			odt		: odt_Reader,
+			odp		: odp_Reader,
+			ods		: ods_Reader,
+			pdf		: pdf_Reader,
+			xml		: xml_Reader
+	},			
+	readFile: readFile,
+	enabled : true,
+	paths: {
+		nlpCorpus: "./nlp_corpus.txt",
+		nlpClasssifier: "./nlp_classifier.txt",
+		nlpRuleset: "./nlp_pos_rules.txt",
+		nlpLexicon: "./nlp_pos_lexicon.txt"
+	},
+	trials 	: false ?  [  // nlp trials
+'Windows sucks.',
+'circular polarized beams are my favorite.',
+'Most regression algorithims are not experimental.',
+'hyperspectral data is great for detecting some things.',
+'Milenio sent some money to a DTO and Fred Smiley.',
+'Milenio conspired with Sinola to threaten and kill and butcher Dr Smiley.'
+	] : null,
+	docFreqs: new ANLP.TfIdf(),
+	docTrie: ANLP.Trie,
+	nlps: {
+		lda: ldaNLP, 
+		mix: mixNLP, 
+		ner: nerNLP
+	},
+	minTextLen : 10,				// Min text length to trigger indexing
+	minReadability : -9999,			// Min relevance score to trigger ANLP
+	minRelevance: 0.0, 				// Min ANLP relevance to tripper intake
+	spellRubric: {
+		"spelling": 3,
+		"suggestion": 1,
+		"grammar": 2
+	}
+});  // must do initial config as ANLP whacks Array prototypes
+
+const { Copy,Each,Log } = require("enum");
 
 //=============== unit tests
 
