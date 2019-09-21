@@ -171,7 +171,9 @@ Clone [ENUM basic enumerators](https://github.com/acmesds/enum) into your PROJEC
 
 Simply require, configure and start the READER:
 	
-	var READ = require("reader").config({
+	var READ = require("reader");
+	
+	READ.config({
 		key: value, 						// set key
 		"key.key": value, 					// indexed set
 		"key.key.": value					// indexed append
