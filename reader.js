@@ -66,12 +66,14 @@ var READ = module.exports = {
 		if (opts) for (var key in opts) READ[key] = opts[key];
 		
 		var
+			Log = console.log,
 			paths = READ.paths,
 			Stanford = SNLP.NlpManager,
 			stanford = READ.stanford = new Stanford({ languages: ["en"] }),
 
-			Classifier = [ANLP.BayesClassifier, ANLP.LogisticRegressionClassifier],
 			Checker = ANLP.Spellcheck,
+			Classifiers = [ANLP.BayesClassifier, ANLP.LogisticRegressionClassifier],
+				
 			Trie = ANLP.Trie,
 			Stemmer = ANLP.PorterStemmer,
 			Analyzer = ANLP.SentimentAnalyzer,
@@ -90,44 +92,33 @@ var READ = module.exports = {
 			dict = READ.dictionary = new ANLP.WordNet(),
 			tagger = READ.tagger = new ANLP.BrillPOSTagger(lexicon,rules);
 
-		if (false)
+		var classifiers = READ.classifiers = [];
+		Classifiers.forEach( (Cls,n) => {	// load/reset pretrained classifiers from save path
 			try {
-				var classifier = READ.classifier = [];
-				Classifier.forEach( (Cls,n) => {
-					classifier[n] = Cls.restore(JSON.parse(FS.readFileSync(paths.nlpClasssifier+n)));
-					console.log("nlp loaded", paths.nlpClasssifier, n);
-				});
+				var cls = classifiers[n] = Cls.restore(JSON.parse(FS.readFileSync(paths.nlpClasssifier+n)));
+				Log("nlp load ", cls.constructor.name, " from ", paths.nlpClasssifier);
 			}
-
 			catch (err) {
-				var classifier = READ.classifier = [];
-				Classifier.forEach( (Cls,n) => {
-					classifier[n] = new Cls();
-					console.log("nlp primed", paths.nlpClasssifier, n);
-				});
-			}
+				var cls = classifiers[n] = new Cls();
+				Log("nlp reset ", cls.constructor.name, " badfrom ", paths.nlpClasssifier);
+			}			
+		});
 
-		else {
-			var classifier = READ.classifier = [];
-			Classifier.forEach( (Cls,n) => {
-				classifier[n] = new Cls();
-				console.log("nlp primed", paths.nlpClasssifier, n);
-			});
-		}
-			
 		stanford.addNamedEntityText(["DTO", "CTO", "hawk", "lieutenant", "police officer", "politician", "officer", "suspect", "windows", "OS"]);
 	},
-	train: rules => {
+	train: rules => {		// train all classifiers
 		var 
 			recs = 0,
 			stanford = READ.stanford,
-			classifier = READ.classifier,
+			classifiers = READ.classifiers,
 			paths = READ.paths;
 
 		rules.forEach( rule => {
+			//Log("nlp add ner");
 			stanford.addDocument( "en", rule.Usecase, rule.Index );
 
-			classifier.forEach( cls => {
+			classifiers.forEach( cls => {
+				//Log("nlp add mix", cls.constructor.name);
 				cls.addDocument(rule.Usecase, rule.Index);
 			});
 		});
@@ -141,27 +132,104 @@ var READ = module.exports = {
 			if ( trials = READ.trials) {
 				( async() => {
 					var test = await stanford.process("en", trials.join("") );
-					Log("SNLP", test);
+					//Log("nlp test", test);
 				}) ();
 			}
 
-			classifier.forEach( (cls,n) => {
+			classifiers.forEach( (cls,n) => {
+				Log("nlp train ", cls.constructor.name);
 				cls.train();
 
 				if ( paths.nlpClasssifier ) {
-					cls.save(paths.nlpClasssifier+n, err => Log( err || "ANLP classifier saved" ) );
-					console.log("nlp saved",paths.nlpClasssifier+n );
+					cls.save(paths.nlpClasssifier+n, err => Log( err || `${cls.constructor.name} saved` ) );
 				}
 			});
 
 			if ( trials = READ.trials) 
-				classifier.forEach( (cls,n) => {
+				classifiers.forEach( (cls,n) => {
 					trials.forEach( trial => {
-						Log(trial, `ANLP${n}=>`, cls.classify(trial));
+						Log(trial, cls.constructor.name, "=>", cls.classify(trial));
 					});
 				});
 		}			
 	},
+	score: 	( doc, methods, cb ) => {	// callback cb(metrics)
+		function sumScores(metrics) {	// summarize per doc metrics
+			var 
+				entities = metrics.entities,
+				count = metrics.count,
+				scores = metrics.scores,
+				ids = metrics.ids,
+				topics = metrics.topics;
+				//dag = metrics.dag;
+
+			scores.forEach( score => {
+				metrics.sentiment += score.sentiment;
+				metrics.relevance += score.relevance;
+				metrics.agreement += score.agreement;
+			}); 
+		}
+
+		var 
+			docs = doc.replace(/\n/g,"").match( /[^\.!\?]+[\.!\?]+/g ) || [],
+			scored = 0,
+			lda = {topics: 3, terms: 2},
+			metrics = {
+				// dag: new ANLP.EdgeWeightedDigraph(),
+				lda: LDA( docs, lda.topics, lda.terms ),
+				freqs: READ.docFreqs,
+				entity: {
+					topics: new READ.docTrie(false),
+					actors: new READ.docTrie(false)
+				},					
+				ids: {
+					topics: 0,
+					actors: 0
+				},
+				topics: {},
+				actors: {},
+				sentiment: 0,
+				relevance: 0,
+				agreement: 0,
+				scores: [],
+				level: 0
+			},
+			scores = metrics.scores,
+			freqs = metrics.freqs;
+			
+		//Log("score", docs, methods);
+		docs.forEach( doc => {
+			if (doc) {	// have a doc to score
+				freqs.addDocument(doc);	
+				methods.forEach( nlp => {
+					if (nlp) 
+						nlp( doc, metrics, score => {	// score using nlp method
+							scores.push( score );
+							if ( ++scored == docs.length ) {	// scored all docs so summarize metrics
+								["DTO", "DTO cash"].forEach( word => {
+									freqs.tfidfs( word, (n,freq) => {
+										if ( score = scores[n] ) score.relevance += freq;
+									});
+								});
+
+								sumScores( metrics );	
+								cb( metrics );
+							}
+
+							else
+							if (scored > docs.length) // no docs
+								cb( metrics );
+						});
+					
+					else
+						Log("nlp ignoring method");
+				});
+			}
+
+			else 
+				scored++;
+		});
+	},	
 	readers: {
 			//idop	: idop_Reader,
 			//jpg		: jpg_Reader,
@@ -182,9 +250,13 @@ var READ = module.exports = {
 	},			
 	readFile: readFile,
 	enabled : true,
+	nlps: {
+		mix: mixNLP,
+		ner: nerNLP
+	},
 	paths: {
 		nlpCorpus: "./nlp_corpus.txt",
-		nlpClasssifier: "./nlp_classifier.txt",
+		nlpClasssifier: "", // "./nlp_classifier.txt",
 		nlpRuleset: "./nlp_pos_rules.txt",
 		nlpLexicon: "./nlp_pos_lexicon.txt"
 	},
@@ -198,11 +270,6 @@ var READ = module.exports = {
 	] : null,
 	docFreqs: new ANLP.TfIdf(),
 	docTrie: ANLP.Trie,
-	nlps: {
-		lda: ldaNLP, 
-		mix: mixNLP, 
-		ner: nerNLP
-	},
 	minTextLen : 10,				// Min text length to trigger indexing
 	minReadability : -9999,			// Min relevance score to trigger ANLP
 	minRelevance: 0.0, 				// Min ANLP relevance to tripper intake
@@ -213,10 +280,12 @@ var READ = module.exports = {
 	}
 };
 
+/*
 function ldaNLP(doc, topics, terms, cb) {	// laten dirichlet doc analysis
 	var docs = doc.replace(/\n/gm,"").match( /[^\.!\?]+[\.!\?]+/g );
 	cb( LDA( docs , topics||2, terms||2 ) );
 }
+*/
 
 function mixNLP(doc, metrics, cb) {	// mixed (max entropy, logistic, naviave) NLP
 
@@ -248,7 +317,7 @@ function mixNLP(doc, metrics, cb) {	// mixed (max entropy, logistic, naviave) NL
 		
 	var 
 		rubric = READ.spellRubric,
-		classifier = READ.classifier,
+		classifiers = READ.classifiers,
 		paths = READ.paths,
 		checker = READ.checker, 
 		analyzer = READ.analyzer,
@@ -273,8 +342,8 @@ function mixNLP(doc, metrics, cb) {	// mixed (max entropy, logistic, naviave) NL
 		classifs = [],
 		agreement = 0;
 
-	classifier.forEach( (cls,n) => {
-		Log(`class[${n}]=` + cls.constructor.name);
+	classifiers.forEach( (cls,n) => {
+		Log("nlp get class", cls.constructor.name, cls.theta);
 		classifs[n] = cls.getClassifications(doc);
 	});
 	tokens.forEach( token => stems.push( stemmer(token) ) );
@@ -332,7 +401,7 @@ function nerNLP(doc, metrics, cb) {	// stanford NER
 		var stats = await stanford.process("en", doc);
 		
 		stats.entities.forEach( ent => {
-			Log(ent);
+			Log("nlp entity",ent);
 			if ( actor = ent.utteranceText )
 				if ( !entity.actors.addString( actor) ) 
 					actors[actor] = {id: ids.actors++, type: "tbd"};
