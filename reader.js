@@ -96,11 +96,11 @@ var READ = module.exports = {
 		Classifiers.forEach( (Cls,n) => {	// load/reset pretrained classifiers from save path
 			try {
 				var cls = classifiers[n] = Cls.restore(JSON.parse(FS.readFileSync(paths.nlpClasssifier+n)));
-				Log("nlp load ", cls.constructor.name, " from ", paths.nlpClasssifier);
+				Log("nlp load ", cls.constructor.name, " from=", paths.nlpClasssifier);
 			}
 			catch (err) {
 				var cls = classifiers[n] = new Cls();
-				Log("nlp reset ", cls.constructor.name, " badfrom ", paths.nlpClasssifier);
+				Log("nlp reset ", cls.constructor.name, " from=", paths.nlpClasssifier);
 			}			
 		});
 
