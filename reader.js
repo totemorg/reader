@@ -1,5 +1,23 @@
 // UNCLASSIFIED
-/*
+
+/**
+
+Document readers and parsers.
+
+@requires enum
+@requires fs
+@requires node-xlsx
+@requires jsdom
+@requires xml2js
+@requires unoconv
+@requires htmlparser
+@requires pdf2json
+@requires yql
+@requires natural
+@requires teacher
+@requires lda
+
+References:
 // https://towardsdatascience.com/a-comparison-between-spacy-ner-stanford-ner-using-all-us-city-names-c4b6a547290
 // https://github.com/explosion/spacy-stanfordnlp
 // https://github.com/explosion/spaCy/issues/259
@@ -21,21 +39,6 @@
 // https://discourse.julialang.org/t/how-much-faster-is-gpu-compare-to-cpu/17533
 // https://people.eecs.berkeley.edu/~sangjin/2013/02/12/CPU-GPU-comparison.html
 */
-
-/**
- @requires enum
- @requires fs
- @requires node-xlsx
- @requires jsdom
- @requires xml2js
- @requires unoconv
- @requires htmlparser
- @requires pdf2json
- @requires yql
- @requires natural
- @requires teacher
- @requires lda
- */
 
 var 
 	// nodejs bindings
