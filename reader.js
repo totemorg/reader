@@ -1,9 +1,11 @@
 // UNCLASSIFIED
 
 /**
+[Installation and Usage](https://sc.appdev.proj.coe/acmesds/totem)
 
 Document readers and parsers.
 
+@module reader
 @requires enum
 @requires fs
 @requires node-xlsx
@@ -308,7 +310,7 @@ function mixNLP(doc, metrics, cb) {	// mixed (max entropy, logistic, naviave) NL
 						});
 					});
 				
-				if ( !type ) type = "person";
+				if ( !type ) type = (random()<0.5) ? "bHat" : "wHat";
 				
 				actors[actor] = {id: ids.actors++, type: type};
 				
@@ -318,6 +320,8 @@ function mixNLP(doc, metrics, cb) {	// mixed (max entropy, logistic, naviave) NL
 		actor = "";
 	}
 		
+	const {random} = Math;
+	
 	var 
 		rubric = READ.spellRubric,
 		classifiers = READ.classifiers,
