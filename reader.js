@@ -1,10 +1,6 @@
 // UNCLASSIFIED
 
 /**
-[Installation and Usage](https://sc.appdev.proj.coe/acmesds/totem)
-
-Document readers and parsers.
-
 @module reader
 @requires enum
 @requires fs
@@ -560,12 +556,10 @@ function xml_Reader(path,cb) {
 }
 
 function pdf_Reader(path,cb) {
-	console.log("pdfrdr");
-
 	var PDF = new PDFP();
 
-	PDF
-	.on("pdfParser_dataReady", function(evtData) {
+	console.log("pdfrdr");
+	PDF.on("pdfParser_dataReady", function(evtData) {
 		console.log(evtData);
 
 		if ((!!evtData) && (!!evtData.data))  {
@@ -587,14 +581,15 @@ function pdf_Reader(path,cb) {
 		
 		else
 			cb(null);
-	})
-	.on("pdfParser_dataError", function(evtData) {
+	});
+	
+	PDF.on("pdfParser_dataError", function(evtData) {
 		console.log("PDF ERROR "+evtData.data);
 	});
 
-	console.log("pdf="+path);
+	console.log("pdf",path);
 	console.log(PDF.loadPDF);
-	//PDF.loadPDF(path);
+	PDF.loadPDF(path);	// all attempts fail
 }
 
 function html_Reader(path,cb) {
@@ -913,6 +908,10 @@ switch ( process.argv[2] ) { //< unit tests
 	case "?":
 		Log("unit test with 'node reader.js [R1 || R2 || ...]'");
 		break;	
+		
+	case "R1":
+	 	pdf_Reader("./stores/ocrTest01.pdf", txt => Log(txt) );
+		break;
 }
 
 // UNCLASSIFIED
