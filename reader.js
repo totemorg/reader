@@ -40,6 +40,7 @@ References:
 
 var 
 	// nodejs bindings
+	CP = require('child_process'),
 	FS = require('fs'),			// File system
 
 	// totem
@@ -232,22 +233,25 @@ var READ = module.exports = {
 		});
 	},	
 	readers: {
-			//idop	: idop_Reader,
-			//jpg		: jpg_Reader,
-			//py		: py_Reader,
-			//js		: js_Reader,
-			//db		: db_Reader,
-			//jade	: jade_Reader,
-			xls	: xls_Reader,
-			xlsx: xls_Reader,
-			txt		: txt_Reader,	
-			html	: html_Reader,
-			yql		: yql_Reader,
-			odt		: odt_Reader,
-			odp		: odp_Reader,
-			ods		: ods_Reader,
-			pdf		: pdf_Reader,
-			xml		: xml_Reader
+		//idop	: idop_Reader,
+		//jpg		: jpg_Reader,
+		//py		: py_Reader,
+		//js		: js_Reader,
+		//db		: db_Reader,
+		//jade	: jade_Reader,
+		//csv: csv_Reader,
+		jpg: ocr_Reader,
+		png: ocr_Reader,
+		xls	: xls_Reader,
+		xlsx: xls_Reader,
+		txt		: txt_Reader,	
+		html	: html_Reader,
+		yql		: yql_Reader,
+		odt		: odt_Reader,
+		odp		: odp_Reader,
+		ods		: ods_Reader,
+		pdf		: pdf_Reader,
+		xml		: xml_Reader
 	},			
 	readFile: readFile,
 	enabled : true,
@@ -556,9 +560,43 @@ function xml_Reader(path,cb) {
 }
 
 function pdf_Reader(path,cb) {
+	var 
+		file = path.split("/").pop(),
+		[x,name,type] = file.match(/(.*)\.(.*)/) || [],
+		out = "";
+	
+	CP.exec( `pdf2json -f ${path} -o ./tmp`, (err,out) => {
+		//Log(err,out);
+		if ( err )
+			cb( err );
+		
+		else
+			FS.readFile( `./tmp/${name}.json`, "utf8", (err,txt) => {
+				//Log( err );
+				if ( err )
+					cb( err );
+				
+				else {
+					var res = JSON.parse(txt);
+					//g( Object.keys(res.formImage) );
+					res.formImage.Pages.forEach( page => {
+						//Log( "page", Object.keys(page) );
+						page.Texts.forEach( text => {
+							//Log( "text", Object.keys(text) );
+							text.R.forEach( R => {
+								out += R.T + " ";
+							});
+						});
+					});
+
+					cb( unescape(out) );
+				}
+			});
+	});
+	/*
 	var PDF = new PDFP();
 
-	console.log("pdfrdr");
+	console.log("pdf reader");
 	PDF.on("pdfParser_dataReady", function(evtData) {
 		console.log(evtData);
 
@@ -590,6 +628,7 @@ function pdf_Reader(path,cb) {
 	console.log("pdf",path);
 	console.log(PDF.loadPDF);
 	PDF.loadPDF(path);	// all attempts fail
+	*/
 }
 
 function html_Reader(path,cb) {
@@ -761,6 +800,17 @@ function yql_Reader(path,cb) {
 			cb(rec);
 		});
 		cb(null);
+	});
+}
+
+function ocr_Reader(path,cb) {
+	var 
+		file = path.split("/").pop(),
+		[x,name,type] = file.match(/(.*)\.(.*)/) || [],
+		out = "";
+	
+	CP.exec( `tesseract ${path} stdout`, (err,out) => {
+		cb( err || out );
 	});
 }
 
