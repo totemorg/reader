@@ -563,7 +563,7 @@ function pdf_Reader(path,cb) {
 	var 
 		file = path.split("/").pop(),
 		[x,name,type] = file.match(/(.*)\.(.*)/) || [],
-		out = "";
+		save = "";
 	
 	CP.exec( `pdf2json -f ${path} -o ./tmp`, (err,out) => {
 		//Log(err,out);
@@ -584,12 +584,12 @@ function pdf_Reader(path,cb) {
 						page.Texts.forEach( text => {
 							//Log( "text", Object.keys(text) );
 							text.R.forEach( R => {
-								out += R.T + " ";
+								save += R.T + " ";
 							});
 						});
 					});
 
-					cb( unescape(out) );
+					cb( unescape(save) );
 				}
 			});
 	});
@@ -806,8 +806,7 @@ function yql_Reader(path,cb) {
 function ocr_Reader(path,cb) {
 	var 
 		file = path.split("/").pop(),
-		[x,name,type] = file.match(/(.*)\.(.*)/) || [],
-		out = "";
+		[x,name,type] = file.match(/(.*)\.(.*)/) || [];
 	
 	CP.exec( `tesseract ${path} stdout`, (err,out) => {
 		cb( err || out );
