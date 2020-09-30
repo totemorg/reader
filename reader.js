@@ -1,41 +1,45 @@
 // UNCLASSIFIED
 
 /**
-@module reader
-@requires enum
-@requires fs
-@requires node-xlsx
-@requires jsdom
-@requires xml2js
-@requires unoconv
-@requires htmlparser
-@requires pdf2json
-@requires yql
-@requires natural
-@requires teacher
-@requires lda
+	@module reader
+	Index (parse, scrape, etc) a variety of document, graphics, presentation, and spreadsheet files 
+	that were uploaded into Totem,  Ingested text is checked for readibility, indexed to the best using 
+	NLP training rules.  See https://github.com/totemstan/reader.git.
 
-References:
-// https://towardsdatascience.com/a-comparison-between-spacy-ner-stanford-ner-using-all-us-city-names-c4b6a547290
-// https://github.com/explosion/spacy-stanfordnlp
-// https://github.com/explosion/spaCy/issues/259
-// https://www.novetta.com/2018/08/evaluating-solutions-for-named-entity-recognition/
-// https://www.datacamp.com/community/blog/spacy-cheatsheet
-// https://towardsdatascience.com/a-comparison-between-spacy-ner-stanford-ner-using-all-us-city-names-c4b6a547290
-// https://towardsdatascience.com/a-review-of-named-entity-recognition-ner-using-automatic-summarization-of-resumes-5248a75de175
-// https://blog.exsilio.com/all/accuracy-precision-recall-f1-score-interpretation-of-performance-measures/
-// https://en.wikipedia.org/wiki/Precision_and_recall
-// https://nlp.stanford.edu/software/CRF-NER.html
+	@requires enum
+	@requires fs
+	@requires node-xlsx
+	@requires jsdom
+	@requires xml2js
+	@requires unoconv
+	@requires htmlparser
+	@requires pdf2json
+	@requires yql
+	@requires natural
+	@requires teacher
+	@requires lda
 
-// https://sites.cs.ucsb.edu/~wychen/publications/plda-aaim09.pdf
-// https://bcatctr.github.io/paraLDA/
+	References:
+	// https://towardsdatascience.com/a-comparison-between-spacy-ner-stanford-ner-using-all-us-city-names-c4b6a547290
+	// https://github.com/explosion/spacy-stanfordnlp
+	// https://github.com/explosion/spaCy/issues/259
+	// https://www.novetta.com/2018/08/evaluating-solutions-for-named-entity-recognition/
+	// https://www.datacamp.com/community/blog/spacy-cheatsheet
+	// https://towardsdatascience.com/a-comparison-between-spacy-ner-stanford-ner-using-all-us-city-names-c4b6a547290
+	// https://towardsdatascience.com/a-review-of-named-entity-recognition-ner-using-automatic-summarization-of-resumes-5248a75de175
+	// https://blog.exsilio.com/all/accuracy-precision-recall-f1-score-interpretation-of-performance-measures/
+	// https://en.wikipedia.org/wiki/Precision_and_recall
+	// https://nlp.stanford.edu/software/CRF-NER.html
 
-// GPU in spaCy
-// https://support.prodi.gy/t/will-a-gpu-make-training-faster/187
+	// https://sites.cs.ucsb.edu/~wychen/publications/plda-aaim09.pdf
+	// https://bcatctr.github.io/paraLDA/
 
-// GPU vs CPU
-// https://discourse.julialang.org/t/how-much-faster-is-gpu-compare-to-cpu/17533
-// https://people.eecs.berkeley.edu/~sangjin/2013/02/12/CPU-GPU-comparison.html
+	// GPU in spaCy
+	// https://support.prodi.gy/t/will-a-gpu-make-training-faster/187
+
+	// GPU vs CPU
+	// https://discourse.julialang.org/t/how-much-faster-is-gpu-compare-to-cpu/17533
+	// https://people.eecs.berkeley.edu/~sangjin/2013/02/12/CPU-GPU-comparison.html
 */
 
 var 
