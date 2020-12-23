@@ -42,7 +42,7 @@
 	// https://people.eecs.berkeley.edu/~sangjin/2013/02/12/CPU-GPU-comparison.html
 */
 
-var 
+const 
 	// nodejs bindings
 	CP = require('child_process'),
 	FS = require('fs'),			// File system
@@ -53,45 +53,42 @@ var
 	// 3rd party
 	//XMLP = require("htmlparser"),			// HTML parser
 	//OO = require('office'),				// Open Office parser
-	//SPELL = require('teacher'),				// Spell checker - requires service.afterthedeadline.com
+	//SPELL = require('teacher'),			// Spell checker - requires service.afterthedeadline.com
 	
 	JSDOM = require('jsdom'),				// Web site crawler	
-	XML2JS = require('xml2js'), 	// XML2JS reader	
 	PDFP = require('pdf2json/pdfparser'), 	// PDF parser
 	YQL = require('yql'),					// Cooperating site scrapper
 	EXCEL = require('node-xlsx'),			// Excel parser
 	ANLP = require('natural'),				// Natural Language Parsing (Bayes or Logireg)
-	SNLP = require('node-nlp'), 		// NLP via Stanford NER
+	SNLP = require('node-nlp'), 			// NLP via Stanford NER
 	LDA = require('lda'), 					// NLP via Latent Dirichlet Allocation
-	XML2JS = require("xml2js"),					// xml to json parser 	
+	XML2JS = require("xml2js"),				// xml to json parser 	
 	UNO = require('unoconv'); 				// File converter/reader
 
-var READ = module.exports = { 
+const
+	{ score, readers, nlps } = READ = module.exports = { 
 	config: opts => { // initial config to avoid ANLP Array prototype conflicts
 		
 		if (opts) for (var key in opts) READ[key] = opts[key];
 		
+		const
+			{ Spellcheck, Trie, PorterStemmer, SentimentAnalyzer, WordTokenizer } = ANLP;
+
 		var
 			Log = console.log,
 			paths = READ.paths,
 			Stanford = SNLP.NlpManager,
 			stanford = READ.stanford = new Stanford({ languages: ["en"] }),
 
-			Checker = ANLP.Spellcheck,
 			Classifiers = [ANLP.BayesClassifier, ANLP.LogisticRegressionClassifier],
 				
-			Trie = ANLP.Trie,
-			Stemmer = ANLP.PorterStemmer,
-			Analyzer = ANLP.SentimentAnalyzer,
-			Tokenizer = ANLP.WordTokenizer, //ANLP.WordTokenizer
-
 			corpus = FS.readFileSync( paths.nlpCorpus, "utf8" ).replace(/^-/g,"").replace(/\n/gm," ").split(" ");
 
 		var				
 			checker = READ.checker = new ANLP.Spellcheck( corpus, true ),
-			analyzer = READ.analyzer = new Analyzer("English", Stemmer, "pattern"),
-			tokenizer = READ.tokenizer = new Tokenizer(),
-			stemmer = READ.stemmer = Stemmer.stem,
+			analyzer = READ.analyzer = new SentimentAnalyzer("English", PorterStemmer, "pattern"),
+			tokenizer = READ.tokenizer = new WordTokenizer(),
+			stemmer = READ.stemmer = PorterStemmer.stem,
 
 			rules = READ.rules = new ANLP.RuleSet(paths.nlpRuleset),
 			lexicon = READ.lexicon = new ANLP.Lexicon(paths.nlpLexicon, "?"),
@@ -244,13 +241,24 @@ var READ = module.exports = {
 		//db		: db_Reader,
 		//jade	: jade_Reader,
 		//csv: csv_Reader,
-		jpg		: ocr_Reader,
-		png		: ocr_Reader,
-		ocr		: ocr_Reader,
+		json	: json_Reader,
+		
+		jpg		: image_Reader,
+		png		: image_Reader,
+		nitf	: image_Reader,
+		ico		: image_Reader,
+		
+		jpgx	: ocr_Reader,
+		pngx	: ocr_Reader,
+		
 		xls		: xls_Reader,
 		xlsx	: xls_Reader,
+		
 		txt		: txt_Reader,	
+		txtx	: nlp_Reader,
+		
 		html	: html_Reader,
+		
 		yql		: yql_Reader,
 		odt		: odt_Reader,
 		odp		: odp_Reader,
@@ -325,26 +333,18 @@ function mixNLP(doc, metrics, cb) {	// mixed (max entropy, logistic, naviave) NL
 		actor = "";
 	}
 		
-	const {random} = Math;
-	
-	var 
-		rubric = READ.spellRubric,
-		classifiers = READ.classifiers,
-		paths = READ.paths,
-		checker = READ.checker, 
-		analyzer = READ.analyzer,
-		tokenizer = READ.tokenizer,
-		stemmer = READ.stemmer,
-		rules = READ.rules,
-		lexicon = READ.lexicon,
-		tagger = READ.tagger,
-		dict = READ.dictionary,
+	const 
+		{random} = Math,
+		{ spellRubric,classifiers,paths,checker,analyzer,tokenizer,stemmer,rules,lexicon,tagger,dictionary} = READ,
+		
+		dict = dictionary,
+		rubric = spellRubric,
 		entity = metrics.entity,
 		topics = metrics.topics,
 		actors = metrics.actors,
 		ids = metrics.ids;
 	
-	var 
+	const 
 		tokens = tokenizer.tokenize(doc),
 		sentiment = analyzer.getSentiment(tokens),
 		tags = tagger.tag(tokens).taggedWords,
@@ -469,11 +469,12 @@ function xls_Reader(path,cb) {
 	cb(null);
 }
 
+function nlp_Reader(path,cb) {
+	("file:"+path).fetchFile( buff => score( buff, nlps, metrics => cb( metrics ) ) )
+}
+								 
 function txt_Reader(path,cb) {
-	FS.readFile( path, 'utf8', (err,txt) => {
-		if ( !err ) cb({ doc: txt });
-		cb( null );
-	});
+	("file:"+path).fetchFile( buff => cb( buff ) );
 }
 
 function odp_Reader(path,cb) {	
@@ -806,6 +807,24 @@ function yql_Reader(path,cb) {
 		});
 		cb(null);
 	});
+}
+
+function json_Reader(path,cb) {
+	("file:"+path).fetchFile( buff => cb( buff.parseJSON([])) );
+}
+
+function image_Reader(path,cb) {
+	const
+		{ jimp } = READ;
+	
+	jimp.read( path )
+	.then( img => { 
+		//Trace("image", img.bitmap.height, img.bitmap.width);
+		img.readPath = path;
+		cb( img ); 
+		return img; 
+	} )
+	.catch( err => cb(null) );	
 }
 
 function ocr_Reader(path,cb) {
