@@ -817,7 +817,7 @@ function image_Reader(path,cb) {
 	const
 		{ jimp } = READ;
 	
-	jimp.read( path )
+	jimp.read( "."+path )
 	.then( img => { 
 		//Trace("image", img.bitmap.height, img.bitmap.width);
 		img.readPath = path;
@@ -828,11 +828,10 @@ function image_Reader(path,cb) {
 }
 
 function ocr_Reader(path,cb) {
-	var 
-		file = path.split("/").pop(),
-		[x,name,type] = file.match(/(.*)\.(.*)/) || [];
+	const
+		src = "."+path;
 	
-	CP.exec( `tesseract ${path} stdout`, (err,out) => {
+	CP.exec( `tesseract ${src} stdout`, (err,out) => {
 		cb( err || out );
 	});
 }
