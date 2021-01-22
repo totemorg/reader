@@ -42,11 +42,44 @@
 	// https://people.eecs.berkeley.edu/~sangjin/2013/02/12/CPU-GPU-comparison.html
 */
 
-const 
+const
 	// nodejs bindings
 	CP = require('child_process'),
-	FS = require('fs'),			// File system
+	FS = require('fs');			// File system
 
+// goofy issue with packages overriding string cause us to init ANLP first
+const
+	ANLP = require('natural'),				// Natural Language Parsing (Bayes or Logireg)
+	TOPICS = ["default", "cartel", "terror", "photons", "os"],
+	$ = (A, cb) => {
+		const
+			N = A.forEach ? A.length : A,
+			res = A.forEach ? new Object() : new Array( N );
+
+		if ( A.forEach )
+			for (var n=0; n<N; n++) cb( A[n], res );
+
+		else
+			for (var n=0; n<N; n++) cb( n, res );
+		
+		return res;
+	},
+
+	spellCheckers = $(TOPICS, (topic,A) => {
+		A[topic] = new ANLP.Spellcheck( 
+			FS
+			.readFileSync( `./${topic}_corpus.txt`, "utf8" )
+			.replace(/^-/g,"").replace(/\n/gm," ").split(" "), 
+			true );
+	}),
+	
+	sentimentAnalyzer = new ANLP.SentimentAnalyzer("English", ANLP.PorterStemmer, "pattern");
+
+function Trace(msg,args,req) {	// execution tracing
+	"reader".trace(msg, req, msg => console.log(msg,args) );
+}
+
+const 
 	// totem
 	//HACK = require('geohack'), 			// chipper+detector workflow
 
@@ -59,180 +92,187 @@ const
 	PDFP = require('pdf2json/pdfparser'), 	// PDF parser
 	YQL = require('yql'),					// Cooperating site scrapper
 	EXCEL = require('node-xlsx'),			// Excel parser
-	ANLP = require('natural'),				// Natural Language Parsing (Bayes or Logireg)
 	SNLP = require('node-nlp'), 			// NLP via Stanford NER
 	LDA = require('lda'), 					// NLP via Latent Dirichlet Allocation
 	XML2JS = require("xml2js"),				// xml to json parser 	
 	UNO = require('unoconv'); 				// File converter/reader
 
+const { Copy,Each,Log } = require("enum");
+
 const
 	{ score, readers, nlps } = READ = module.exports = { 
 	config: opts => { // initial config to avoid ANLP Array prototype conflicts
 		
-		if (opts) for (var key in opts) READ[key] = opts[key];
-		
-		const
-			{ Spellcheck, Trie, PorterStemmer, SentimentAnalyzer, WordTokenizer } = ANLP;
+		//if (opts) for (var key in opts) READ[key] = opts[key];
+		if (opts) Copy(opts,READ,".");
 
-		var
-			Log = console.log,
-			paths = READ.paths,
-			Stanford = SNLP.NlpManager,
-			stanford = READ.stanford = new Stanford({ languages: ["en"] }),
+		const { classifiers, trainer, lexicon, sqlThread, paths, stanford, PorterStemmer } = READ;
+	
+		//READ.tagger = new ANLP.BrillPOSTagger(lexicon,rules);
 
-			Classifiers = [ANLP.BayesClassifier, ANLP.LogisticRegressionClassifier],
-				
-			corpus = FS.readFileSync( paths.nlpCorpus, "utf8" ).replace(/^-/g,"").replace(/\n/gm," ").split(" ");
-
-		var				
-			checker = READ.checker = new ANLP.Spellcheck( corpus, true ),
-			analyzer = READ.analyzer = new SentimentAnalyzer("English", PorterStemmer, "pattern"),
-			tokenizer = READ.tokenizer = new WordTokenizer(),
-			stemmer = READ.stemmer = PorterStemmer.stem,
-
-			rules = READ.rules = new ANLP.RuleSet(paths.nlpRuleset),
-			lexicon = READ.lexicon = new ANLP.Lexicon(paths.nlpLexicon, "?"),
-			dict = READ.dictionary = new ANLP.WordNet(),
-			tagger = READ.tagger = new ANLP.BrillPOSTagger(lexicon,rules);
-
-		var classifiers = READ.classifiers = [];
-		Classifiers.forEach( (Cls,n) => {	// load/reset pretrained classifiers from save path
+		classifiers.forEach( (Cls,n) => {	// load/reset pretrained classifiers from save path
 			try {
 				var cls = classifiers[n] = Cls.restore(JSON.parse(FS.readFileSync(paths.nlpClasssifier+n)));
-				Log("nlp load ", cls.constructor.name, " from=", paths.nlpClasssifier);
+				Log(cls.constructor.name, "load from=", paths.nlpClasssifier);
 			}
 			catch (err) {
 				var cls = classifiers[n] = new Cls();
-				Log("nlp reset ", cls.constructor.name, " from=", paths.nlpClasssifier);
+				Log(cls.constructor.name, "reset from=", paths.nlpClasssifier);				
 			}			
 		});
 
-		stanford.addNamedEntityText(["DTO", "CTO", "hawk", "lieutenant", "police officer", "politician", "officer", "suspect", "windows", "OS"]);
+		if ( sqlThread )
+			sqlThread( sql => {
+				Log("TRAIN detectors");
+				sql.query('SELECT `UseCase` AS doc, `Index` AS topic FROM openv.nlprules', (err,rules) => {
+					trainer( err ? [] : rules, true );
+				});
+			});			
+		
+		//Log("define entities");
+		if ( stanford ) stanford.addNamedEntityText(["DTO", "CTO", "hawk", "lieutenant", "police officer", "politician", "officer", "suspect", "windows", "OS"]);
 	},
-	train: rules => {		// train all classifiers
+		
+	topics: TOPICS,
+	terms: ["cartel","DTO","CTO","system","weapon","bomb","cats","dogs"],
+		
+	stanford: new SNLP.NlpManager({ languages: ["en"] }),
+	tokenizer: new ANLP.WordTokenizer(),
+	stemmer: ANLP.PorterStemmer.stem,
+	trie: ANLP.Trie,
+	
+	spellCheckers: spellCheckers,
+	sentimentAnalyzer: sentimentAnalyzer,
+		
+	classifiers: [ANLP.BayesClassifier, ANLP.LogisticRegressionClassifier],
+	rules: new ANLP.RuleSet("./nlp_pos_rules.txt"),
+	lexicon: new ANLP.Lexicon("./nlp_pos_lexicon.txt", "?"),
+	tagger: null,
+	dictionary: new ANLP.WordNet(),
+		
+	trainer: (rules,test) => {		// train all classifiers
 		var 
-			recs = 0,
-			stanford = READ.stanford,
-			classifiers = READ.classifiers,
-			paths = READ.paths;
+			recs = 0;
+		
+		const
+			{ topics,terms,stanford, classifiers, paths, trials } = READ;
 
-		rules.forEach( rule => {
-			//Log("nlp add ner");
-			stanford.addDocument( "en", rule.Usecase, rule.Index );
-
-			classifiers.forEach( cls => {
-				//Log("nlp add mix", cls.constructor.name);
-				cls.addDocument(rule.Usecase, rule.Index);
+		if ( stanford ) {
+			rules.forEach( rule => {
+				//Log("add doc", rule );
+				stanford.addDocument( "en", rule.doc, rule.topic );
 			});
-		});
-
-		if (rules.length) {
+			
 			( async() => {
+				Log("train StanfordCRF");
 				await stanford.train();
 				stanford.save();
-			}) ();
-
-			if ( trials = READ.trials) {
-				( async() => {
-					var test = await stanford.process("en", trials.join("") );
-					//Log("nlp test", test);
-				}) ();
-			}
-
-			classifiers.forEach( (cls,n) => {
-				Log("nlp train ", cls.constructor.name);
-				cls.train();
-
-				if ( paths.nlpClasssifier ) {
-					cls.save(paths.nlpClasssifier+n, err => Log( err || `${cls.constructor.name} saved` ) );
-				}
-			});
-
-			if ( trials = READ.trials) 
-				classifiers.forEach( (cls,n) => {
-					trials.forEach( trial => {
-						Log(trial, cls.constructor.name, "=>", cls.classify(trial));
-					});
-				});
-		}			
-	},
-	score: 	( doc, methods, cb ) => {	// callback cb(metrics)
-		function sumScores(metrics) {	// summarize per doc metrics
-			var 
-				entities = metrics.entities,
-				count = metrics.count,
-				scores = metrics.scores,
-				ids = metrics.ids,
-				topics = metrics.topics;
-				//dag = metrics.dag;
-
-			scores.forEach( score => {
-				metrics.sentiment += score.sentiment;
-				metrics.relevance += score.relevance;
-				metrics.agreement += score.agreement;
-			}); 
+			}) ();			
 		}
 
-		var 
-			docs = doc.replace(/\n/g,"").match( /[^\.!\?]+[\.!\?]+/g ) || [],
-			scored = 0,
-			lda = {topics: 3, terms: 2},
-			metrics = {
-				// dag: new ANLP.EdgeWeightedDigraph(),
-				lda: LDA( docs, lda.topics, lda.terms ),
-				freqs: READ.docFreqs,
-				entity: {
-					topics: new READ.docTrie(false),
-					actors: new READ.docTrie(false)
-				},					
-				ids: {
-					topics: 0,
-					actors: 0
-				},
-				topics: {},
-				actors: {},
-				sentiment: 0,
-				relevance: 0,
-				agreement: 0,
-				scores: [],
-				level: 0
-			},
-			scores = metrics.scores,
-			freqs = metrics.freqs;
-			
-		//Log("score", docs, methods);
-		docs.forEach( doc => {
-			if (doc) {	// have a doc to score
-				freqs.addDocument(doc);	
-				methods.forEach( nlp => {
-					if (nlp) 
-						nlp( doc, metrics, score => {	// score using nlp method
-							scores.push( score );
-							if ( ++scored == docs.length ) {	// scored all docs so summarize metrics
-								["DTO", "DTO cash"].forEach( word => {
-									freqs.tfidfs( word, (n,freq) => {
-										if ( score = scores[n] ) score.relevance += freq;
-									});
-								});
+		rules.forEach( rule => {
+			classifiers.forEach( cls => {
+				//Log("add doc", cls.constructor.name, rule);
+				cls.addDocument(rule.doc, rule.topic);
+			});
+		});
 
-								sumScores( metrics );	
-								cb( metrics );
-							}
+		classifiers.forEach( (cls,n) => {
+			Log("train", cls.constructor.name);
+			cls.train();
 
-							else
-							if (scored > docs.length) // no docs
-								cb( metrics );
-						});
-					
-					else
-						Log("nlp ignoring method");
+			if ( false && paths.nlpClasssifier ) {
+				cls.save(paths.nlpClasssifier+n, err => Log( err || `${cls.constructor.name} saved` ) );
+			}
+		});
+
+		if ( trials && test ) {			
+			if ( stanford ) {
+				trials.forEach( trial => {
+					( async() => {
+						var test = await stanford.process("en", trial );
+						Log("StanfordCRF", trial, "=>", test.intent);
+					}) ();
 				});
 			}
-
-			else 
-				scored++;
+			
+			classifiers.forEach( (cls,n) => {
+				trials.forEach( trial => {
+					Log(cls.constructor.name, trial, "=>", cls.classify(trial));
+				});
+			});
+			
+			Log("LDA", "...", "=>", LDA(trials.join("").fragment(), 2, 5, ["en"]) );
+		}
+	},
+		
+	scanner: (doc,topic,threshold,cb) => {
+		const 
+			{random} = Math,
+			{ freqAnalyzer,terms,topics,spellRubric,classifiers,paths,checker,spellCheckers,sentimentAnalyzer,tokenizer,stemmer,rules,lexicon,tagger,dictionary} = READ,
+			spellChecker = spellCheckers[topic],
+			tokens = tokenizer.tokenize(doc),
+			frags = doc.fragment(),   // .split("."),
+			idf = new freqAnalyzer(),
+			score = {
+				Sentiment: sentimentAnalyzer.getSentiment(tokens),
+				Readability: 0,
+				LDA: LDA( frags , 2||topics.length, 5||terms.length, ["en"] ),
+				Freqs: {}
+			},
+			{ Freqs } = score;
+						
+		//Log( tokens );
+		Log(frags);
+		
+		tokens.forEach( word => {
+			score.Readability += spellChecker.isCorrect(word) ? 1 : -2;
 		});
-	},	
+
+		frags.forEach( frag => {
+			if (frag) {								// discard empties
+				idf.addDocument(frag);
+				
+				classifiers.forEach( cls => {
+					const name = cls.constructor.name;
+					cls.getClassifications(frag).forEach( (idx,m) => {
+						//Log( name, frag, idx);
+						if ( ! (idx.label in score) ) score[idx.label] = 0;
+						//if ( idx.value > threshold ) 
+						score[idx.label] += idx.value;
+					});
+				});
+
+				/*
+				if ( sentimentAnalyzer ) score.Sentiment = sentimentAnalyzer.getSentiment(tokens);
+				if ( tagger ) score.tags = tagger.tag(tokens).taggedWords;
+
+				tokens.forEach( token => stems.push( stemmer(token) ) );
+				//stems.forEach( stem => relevance += checker.isCorrect(stem) ? "y" : "n" );
+				tags.forEach( (tag,n) => tags[n] = tag.tag );
+
+				tags.forEach( (tag,n) => {  // POS analysis
+					if ( tag.startsWith("?") || tag.startsWith("NN") ) 
+						actor += tokens[n];
+
+					else 
+						flushActor(dict);
+
+					//else
+					//if ( tag.startsWith("VB") ) topics.push( tokens[n] ); 
+				});
+				flushActor(dict); */
+			}
+		});
+
+		terms.forEach( term => {
+			Freqs[term] = 0;
+			idf.tfidfs( term, (n,measure) => Freqs[term] += measure );
+		});
+		
+		cb(score);
+	},
+
 	readers: {
 		//idop	: idop_Reader,
 		//jpg		: jpg_Reader,
@@ -266,27 +306,22 @@ const
 		pdf		: pdf_Reader,
 		xml		: xml_Reader
 	},			
-	readFile: readFile,
 	enabled : true,
-	nlps: {
-		mix: mixNLP,
-		ner: nerNLP
-	},
 	paths: {
 		nlpCorpus: "./nlp_corpus.txt",
 		nlpClasssifier: "", // "./nlp_classifier.txt",
 		nlpRuleset: "./nlp_pos_rules.txt",
 		nlpLexicon: "./nlp_pos_lexicon.txt"
 	},
-	trials 	: false ?  [  // nlp trials
+	trials 	: [  // nlp trials
 'Windows sucks.',
 'circular polarized beams are my favorite.',
 'Most regression algorithims are not experimental.',
 'hyperspectral data is great for detecting some things.',
 'Milenio sent some money to a DTO and Fred Smiley.',
 'Milenio conspired with Sinola to threaten and kill and butcher Dr Smiley.'
-	] : null,
-	docFreqs: new ANLP.TfIdf(),
+	],
+	freqAnalyzer: ANLP.TfIdf,
 	docTrie: ANLP.Trie,
 	minTextLen : 10,				// Min text length to trigger indexing
 	minReadability : -9999,			// Min relevance score to trigger ANLP
@@ -298,146 +333,6 @@ const
 	}
 };
 
-/*
-function ldaNLP(doc, topics, terms, cb) {	// laten dirichlet doc analysis
-	var docs = doc.replace(/\n/gm,"").match( /[^\.!\?]+[\.!\?]+/g );
-	cb( LDA( docs , topics||2, terms||2 ) );
-}
-*/
-
-function mixNLP(doc, metrics, cb) {	// mixed (max entropy, logistic, naviave) NLP
-
-	function flushActor( dict ) {
-		if ( actor )
-			if ( !entity.actors.addString( actor ) ) {
-				var
-					isPhone = actor.match(/^[0-9\-]*/)[0],
-					isEmail = actor.match(/(.*)\@(.*)/),
-					isCartel = actor.match(/(.*)\[(.*)\]$/) || actor.match("cartel"),
-					type = isPhone ? "phone" : isEmail ? "email" : isCartel ? "cartel" : "";
-				
-				if ( !type && dict )
-					dict.lookup(actor, recs => {
-						recs.forEach( rec => {
-							if ( rec.def.match("city") || rec.def.match("state") || rec.def.match("republic" ) ) type = "place";
-						});
-					});
-				
-				if ( !type ) type = (random()<0.5) ? "bHat" : "wHat";
-				
-				actors[actor] = {id: ids.actors++, type: type};
-				
-				Log( actor, actors[actor] );
-			}
-		
-		actor = "";
-	}
-		
-	const 
-		{random} = Math,
-		{ spellRubric,classifiers,paths,checker,analyzer,tokenizer,stemmer,rules,lexicon,tagger,dictionary} = READ,
-		
-		dict = dictionary,
-		rubric = spellRubric,
-		entity = metrics.entity,
-		topics = metrics.topics,
-		actors = metrics.actors,
-		ids = metrics.ids;
-	
-	const 
-		tokens = tokenizer.tokenize(doc),
-		sentiment = analyzer.getSentiment(tokens),
-		tags = tagger.tag(tokens).taggedWords,
-		stems = [],
-		relevance = "",
-		actor = "",
-		classifs = [],
-		agreement = 0;
-
-	classifiers.forEach( (cls,n) => {
-		Log("nlp get class", cls.constructor.name, cls.theta);
-		classifs[n] = cls.getClassifications(doc);
-	});
-	tokens.forEach( token => stems.push( stemmer(token) ) );
-	//stems.forEach( stem => relevance += checker.isCorrect(stem) ? "y" : "n" );
-	tags.forEach( (tag,n) => tags[n] = tag.tag );
-
-	tags.forEach( (tag,n) => {  // POS analysis
-		if ( tag.startsWith("?") || tag.startsWith("NN") ) 
-			actor += tokens[n];
-
-		else 
-			flushActor(dict);
-		
-		//else
-		//if ( tag.startsWith("VB") ) topics.push( tokens[n] ); 
-	});
-	flushActor(dict);
-
-	var topic = classifs[0][0].label, weight = 0;
-	classifs.forEach( classif => { 
-		if ( classif[0].label == topic ) agreement++; 
-		weight += classif[0].value;
-	});
-
-	if ( !entity.topics.addString(topic) ) 
-		topics[topic] = {id: ids.topics++, weight: weight}; 
-	
-	else
-		topics[topic].weight += weight;
-			
-	
-	//if ( ref.label in topics ) topics[ref.label] += ref.value; else topics[ref.label] = ref.value;
-
-	//Log(frag, sentiment);
-	cb({
-		pos: tags.join(";"),
-		classifs: classifs,
-		tokens: tokens,
-		agreement: agreement / classifs.length,
-		stems: stems,
-		sentiment: sentiment,
-		relevance: 0
-	});
-}
-
-function nerNLP(doc, metrics, cb) {	// stanford NER
-	var 
-		stanford = READ.stanford,
-		entity = metrics.entity,
-		actors = metrics.actors,
-		topics = metrics.topics,
-		ids = metrics.ids;
-
-	( async() => {
-		var stats = await stanford.process("en", doc);
-		
-		stats.entities.forEach( ent => {
-			Log("nlp entity",ent);
-			if ( actor = ent.utteranceText )
-				if ( !entity.actors.addString( actor) ) 
-					actors[actor] = {id: ids.actors++, type: "tbd"};
-			
-			//actors.push( ent.utteranceText ) 
-		});
-		
-		if ( topic = stats.intent )		
-			if ( !entity.topics.addString( topic) ) 
-				topics[topic] = {id: ids.topics++, weight: stats.score}; 
-		
-			else
-				topics[topic].weight += stats.score; 
-
-		cb({
-			classifs: [{value: stats.score, label: stats.intent}],
-			sentiment: stats.sentiment.score,
-			relevance: 0,
-			agreement: 1,
-			stats: stats
-		});
-	}) ();
-}
-		
 function xls_Reader(path,cb) {
 	var 
 		sheets = EXCEL.parse(path);
@@ -517,6 +412,7 @@ function odt_Reader(path,cb) {
 			});
 		});
 	}
+	
 	else
 	if (false) {  	// drop images (output to stdout)
 		var handler = new XMLP.DefaultHandler(function (error, dom) {
@@ -540,6 +436,7 @@ function odt_Reader(path,cb) {
 			parser.parseComplete(data);			
 		});	
 	}		
+	
 	else 			// use ooxml (UNO has problems with xml)  retains 1st image in public/tmp
 		UNO.convert(path, "ooxml", {output:"./tmps/"+path}, function (err,data) {
 			FS.readFile("./tmps/"+path, 'utf-8', function (err,data) {
@@ -893,20 +790,11 @@ function idop_Reader(path,cb) {
 }
 */
 
-function readFile(path, cb) {
-	var 
-		parts = path.split("."),
-		type = parts.pop();
-
-	if ( reader = READ.readers[type] )
-		reader(path, cb);
-	
-	else
-		cb( null );
-}
-
-/*
 [
+	function fragment() {
+		return this.replace(/\n/gm,"").match( /[^\.!\?]+[\.!\?]+/g ) || [this];
+	}
+	/*
 	function cleaner() {	
 		return this
 				.toUpperCase()
@@ -925,12 +813,14 @@ function readFile(path, cb) {
 				.replace(/ BECAUSE /g,".")
 				.replace(/ WHEN /g,".")
 				.replace(/  /g," ");
-	},
+	}, */
 
+	/*
 	function splitter() {
 		return this.match( /[^\.!\?]+[\.!\?]+/g );
-	},
+	}, */
 
+	/*
 	function indexor(score,cb) {
 		var rubric = READ.spellRubric,
 			classify = READ.classif,
@@ -963,12 +853,10 @@ function readFile(path, cb) {
 				cb();
 			});
 	}
+	*/
 ].Extend(String);
-*/
 
-READ.config();  // Must config before enum to avoid ANLP array prototype collisions
-
-const { Copy,Each,Log } = require("enum");
+//READ.config();  // Must config before enum to avoid ANLP array prototype collisions
 
 //=============== unit tests
 
