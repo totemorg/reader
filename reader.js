@@ -218,12 +218,15 @@ const
 				Sentiment: sentimentAnalyzer.getSentiment(tokens),
 				Readability: 0,
 				LDA: LDA( frags , 2||topics.length, 5||terms.length, ["en"] ),
-				Freqs: {}
+				Freqs: {},
+				Topic: 0
 			},
 			{ Freqs } = score;
 						
 		//Log( tokens );
-		Log(frags);
+		//Log(frags);
+		
+		Log("SCAN", topic, threshold);
 		
 		tokens.forEach( word => {
 			score.Readability += spellChecker.isCorrect(word) ? 1 : -2;
@@ -237,9 +240,9 @@ const
 					const name = cls.constructor.name;
 					cls.getClassifications(frag).forEach( (idx,m) => {
 						//Log( name, frag, idx);
-						if ( ! (idx.label in score) ) score[idx.label] = 0;
-						//if ( idx.value > threshold ) 
-						score[idx.label] += idx.value;
+						//if ( ! (idx.label in score) ) score[idx.label] = 0;
+						if ( idx.label == topic ) if ( idx.value >= threshold ) score.Topic++; 
+						//score[idx.label] += idx.value;
 					});
 				});
 
