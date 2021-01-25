@@ -43,6 +43,12 @@
 */
 
 const
+	// globals
+	ENV = process.env,
+	Log = (...args) => console.log(">>>reader", args),
+	Trace = (msg,req,res) => "reader".trace(msg,req,res);
+
+const
 	// nodejs bindings
 	CP = require('child_process'),
 	FS = require('fs');			// File system
@@ -75,10 +81,6 @@ const
 	
 	sentimentAnalyzer = new ANLP.SentimentAnalyzer("English", ANLP.PorterStemmer, "pattern");
 
-function Trace(msg,args,req) {	// execution tracing
-	"reader".trace(msg, req, msg => console.log(msg,args) );
-}
-
 const 
 	// totem
 	//HACK = require('geohack'), 			// chipper+detector workflow
@@ -95,9 +97,8 @@ const
 	SNLP = require('node-nlp'), 			// NLP via Stanford NER
 	LDA = require('lda'), 					// NLP via Latent Dirichlet Allocation
 	XML2JS = require("xml2js"),				// xml to json parser 	
-	UNO = require('unoconv'); 				// File converter/reader
-
-const { Copy,Each,Log } = require("enum");
+	UNO = require('unoconv'),				// File converter/reader
+	{ Copy,Each } = require("enum");		// basic enumerators
 
 const
 	{ score, readers, nlps } = READ = module.exports = { 
@@ -238,12 +239,14 @@ const
 				
 				classifiers.forEach( cls => {
 					const name = cls.constructor.name;
-					cls.getClassifications(frag).forEach( (idx,m) => {
-						//Log( name, frag, idx);
-						//if ( ! (idx.label in score) ) score[idx.label] = 0;
-						if ( idx.label == topic ) if ( idx.value >= threshold ) score.Topic++; 
-						//score[idx.label] += idx.value;
-					});
+					
+					if ( classifer = cls.getClassifications )
+						classifier(frag).forEach( (idx,m) => {
+							//Log( name, frag, idx);
+							//if ( ! (idx.label in score) ) score[idx.label] = 0;
+							if ( idx.label == topic ) if ( idx.value >= threshold ) score.Topic++; 
+							//score[idx.label] += idx.value;
+						});
 				});
 
 				/*
