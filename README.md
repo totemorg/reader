@@ -1,8 +1,8 @@
 # READER
 
-READER will index (parse, scrape, etc) a variety of document, graphics, presentation, and spreadsheet files 
+**READER** will index (parse, scrape, etc) a variety of document, graphics, presentation, and spreadsheet files 
 that were uploaded into Totem,  Ingested text is checked for readibility, indexed to the best using 
-[NLP training rules](/admins.view), then reflected into the [file stores](/files.view).
+[NLP training rules](/nlprules.view), then reflected into the [file stores](/files.view).
 
 ## Suport File Types
 
@@ -154,7 +154,7 @@ that were uploaded into Totem,  Ingested text is checked for readibility, indexe
 
 ## Installation
 
-Clone [READER file readers](https://github.com/totemstan/reader) || [COE](https://sc.appdev.proj.coe/acmesds/reader) || [SBU](https://gitlab.west.nga.ic.gov/acmesds/reader) into your PROJECT/reader folder.   
+Clone [**READER** file readers](https://github.com/totemstan/reader) || [COE](https://sc.appdev.proj.coe/acmesds/reader) || [SBU](https://gitlab.west.nga.ic.gov/acmesds/reader) into your PROJECT/reader folder.   
 
 ## Requires
 
@@ -168,7 +168,7 @@ Clone [READER file readers](https://github.com/totemstan/reader) || [COE](https:
 	
 ## Usage
 
-Require, configure and start the READER:
+Require, configure and start the **READER**:
 	
 	var READ = require("reader");
 	

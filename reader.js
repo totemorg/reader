@@ -1,10 +1,11 @@
 // UNCLASSIFIED
 
 /**
-	@module reader
-	Index (parse, scrape, etc) a variety of document, graphics, presentation, and spreadsheet files 
-	that were uploaded into Totem,  Ingested text is checked for readibility, indexed to the best using 
-	NLP training rules.  See https://github.com/totemstan/reader.git.
+	@module READER
+	
+	[READER](https://github.com/totemstan/reader.git) will index (parse, scrape, etc) a variety of document, 
+	graphics, presentation, and spreadsheet files that were uploaded into Totem,  Ingested text is checked 
+	for readibility, indexed to the best using NLP training rules.
 
 	@requires enum
 	@requires fs
@@ -43,13 +44,8 @@
 */
 
 const
-	// globals
-	ENV = process.env,
-	Log = (...args) => console.log(">>>reader", args),
-	Trace = (msg,req,res) => "reader".trace(msg,req,res);
-
-const
 	// nodejs bindings
+	ENV = process.env,
 	CP = require('child_process'),
 	FS = require('fs');			// File system
 
@@ -101,7 +97,11 @@ const
 	{ Copy,Each } = require("enum");		// basic enumerators
 
 const
-	{ score, readers, nlps } = READ = module.exports = { 
+	{ Log, Trace, score, readers, nlps } = READ = module.exports = { 
+		
+	Log: (...args) => console.log(">>>reader", args),
+	Trace: (msg,req,res) => "reader".trace(msg,req,res),
+		
 	config: opts => { // initial config to avoid ANLP Array prototype conflicts
 		
 		//if (opts) for (var key in opts) READ[key] = opts[key];
