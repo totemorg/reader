@@ -70,7 +70,7 @@ const
 	spellCheckers = $(TOPICS, (topic,A) => {
 		A[topic] = new ANLP.Spellcheck( 
 			FS
-			.readFileSync( `./${topic}_corpus.txt`, "utf8" )
+			.readFileSync( `./nlpconfig/${topic}_corpus.txt`, "utf8" )
 			.replace(/^-/g,"").replace(/\n/gm," ").split(" "), 
 			true );
 	}),
@@ -146,8 +146,8 @@ const
 	sentimentAnalyzer: sentimentAnalyzer,
 		
 	classifiers: [ANLP.BayesClassifier, ANLP.LogisticRegressionClassifier],
-	rules: new ANLP.RuleSet("./nlp_pos_rules.txt"),
-	lexicon: new ANLP.Lexicon("./nlp_pos_lexicon.txt", "?"),
+	rules: new ANLP.RuleSet("./nlpconfig/nlp_pos_rules.txt"),
+	lexicon: new ANLP.Lexicon("./nlpconfig/nlp_pos_lexicon.txt", "?"),
 	tagger: null,
 	dictionary: new ANLP.WordNet(),
 		
@@ -313,10 +313,10 @@ const
 	},			
 	enabled : true,
 	paths: {
-		nlpCorpus: "./nlp_corpus.txt",
+		nlpCorpus: "./nlpconfig/nlp_corpus.txt",
 		nlpClasssifier: "", // "./nlp_classifier.txt",
-		nlpRuleset: "./nlp_pos_rules.txt",
-		nlpLexicon: "./nlp_pos_lexicon.txt"
+		nlpRuleset: "./nlpconfig/nlp_pos_rules.txt",
+		nlpLexicon: "./nlpconfig/nlp_pos_lexicon.txt"
 	},
 	trials 	: [  // nlp trials
 'Windows sucks.',
