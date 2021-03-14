@@ -122,7 +122,7 @@ const
 			}			
 		});
 
-		if ( sqlThread )
+		if ( sqlThread && 0 )
 			sqlThread( sql => {
 				Log("TRAIN detectors");
 				sql.query('SELECT `UseCase` AS doc, `Index` AS topic FROM openv.nlprules', (err,rules) => {
@@ -240,13 +240,12 @@ const
 				classifiers.forEach( cls => {
 					const name = cls.constructor.name;
 					
-					if ( classifer = cls.getClassifications )
-						classifier(frag).forEach( (idx,m) => {
-							//Log( name, frag, idx);
-							//if ( ! (idx.label in score) ) score[idx.label] = 0;
-							if ( idx.label == topic ) if ( idx.value >= threshold ) score.Topic++; 
-							//score[idx.label] += idx.value;
-						});
+					cls.getClassifications(frag).forEach( (idx,m) => {
+						//Log( name, frag, idx);
+						//if ( ! (idx.label in score) ) score[idx.label] = 0;
+						if ( idx.label == topic ) if ( idx.value >= threshold ) score.Topic++; 
+						//score[idx.label] += idx.value;
+					});
 				});
 
 				/*
@@ -340,31 +339,33 @@ const
 };
 
 function xls_Reader(path,cb) {
-	var 
-		sheets = EXCEL.parse(path);
+	const 
+		[file,name] = path.split(":"),
+		sheets = EXCEL.parse(file);
 
 	if (sheets) 
-		sheets.forEach( function (sheet, n) {  // sheet - no formulas allowed
-			var 
-				vars = new Array(sheet.maxCol),
-				data = sheet.data;
+		sheets.forEach( (sheet, n) => {  // sheet - no formulas allowed
+			if ( !name || name==sheet.name ) {
+				const 
+					vars = new Array(sheet.maxCol),
+					data = sheet.data,
+					recs = [];
 
-			data.forEach( function (row, j) {
-				var
-					rec = new Object({ID:j, sheet: sheet.name});
+				data.forEach( (row, j) => {
+					const
+						rec = {ID:j, sheet: sheet.name};
 
-				if ( j ) {
-					row.forEach( function (cell, i) {
-						rec[vars[i]] = cell;
-					});					
-					cb(rec);
-				}
-
-				else   // 1st record is the header containing field names
-					row.forEach( function (cell, i) {
-						vars[i] = cell;
-					});
-			});
+					if ( j ) {
+						row.forEach( (cell, i) => rec[ vars[i] ] = cell );
+						recs.push(rec);
+					}
+					
+					else   // 1st record is the header containing field names
+						row.forEach( (cell, i) => vars[i] = cell );
+				});
+				
+				cb(recs);
+			}
 		});
 
 	cb(null);
