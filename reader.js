@@ -94,7 +94,7 @@ const
 	LDA = require('lda'), 					// NLP via Latent Dirichlet Allocation
 	XML2JS = require("xml2js"),				// xml to json parser 	
 	UNO = require('unoconv'),				// File converter/reader
-	{ Copy,Each } = require("enum");		// basic enumerators
+	{ Copy,Each } = require("enums");		// basic enumerators
 
 const
 	{ Log, Trace, score, readers, nlps } = READ = module.exports = { 
