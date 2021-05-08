@@ -1,12 +1,13 @@
 // UNCLASSIFIED
 
 /**
-	@module READER
-	
-	[READER](https://github.com/totemstan/reader.git) will index (parse, scrape, etc) a variety of document, 
-	graphics, presentation, and spreadsheet files that were uploaded into Totem,  Ingested text is checked 
+	Index (parse, scrape, etc) a variety of document, 
+	graphic, presentation, and spreadsheet files uploaded into Totem,  
+	Ingested text is checked 
 	for readibility, indexed to the best using NLP training rules.
 
+	@module READER
+	
 	@requires enum
 	@requires fs
 	@requires node-xlsx

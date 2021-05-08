@@ -20,9 +20,9 @@
   },
   "devDependencies": {},
   "scripts": {
-    "prmprep": "source ./maint.sh prmput",
-    "prmload": "source ./maint.sh prmget",
-    "test": "node reader.js"
+    "test": "node reader.js",
+	"redoc": "jsdoc2md --template README.hbs --files reader.js >README.md; git commit -am 'redoc'; git  push agent master"
+
   },
   "repository": {
     "type": "git",
