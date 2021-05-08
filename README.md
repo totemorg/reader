@@ -193,3 +193,17 @@ or [follow TOTEM milestones](http://totem.hopto.org/milestones.view) || [COE](ht
 ## License
 
 [MIT](LICENSE)
+											   
+<a name="module_READER"></a>
+
+## READER
+Index (parse, scrape, etc) a variety of document, 
+	graphic, presentation, and spreadsheet files uploaded into Totem,  
+	Ingested text is checked 
+	for readibility, indexed to the best using NLP training rules.
+
+**Requires**: <code>module:enum</code>, <code>module:fs</code>, <code>module:node-xlsx</code>, <code>module:jsdom</code>, <code>module:xml2js</code>, <code>module:unoconv</code>, <code>module:htmlparser</code>, <code>module:pdf2json</code>, <code>module:yql</code>, <code>module:natural</code>, <code>module:teacher</code>, <code>module:lda</code>  
+
+* * *
+
+&copy; 2012 ACMESDS
