@@ -197,12 +197,13 @@ or [follow TOTEM milestones](http://totem.hopto.org/milestones.view) || [COE](ht
 <a name="module_READER"></a>
 
 ## READER
-Index (parse, scrape, etc) a variety of document, 
-	graphic, presentation, and spreadsheet files uploaded into Totem,  
-	Ingested text is checked 
-	for readibility, indexed to the best using NLP training rules.
+Read (index, score, parse, scrape) a variety of document, 
+graphic, presentation, and spreadsheet files,  
+Ingested text is checked 
+for readibility, indexed to the best using NLP training rules.
+Documented in accordance with [jsdoc](https://jsdoc.app/).
 
-**Requires**: <code>module:enum</code>, <code>module:fs</code>, <code>module:node-xlsx</code>, <code>module:jsdom</code>, <code>module:xml2js</code>, <code>module:unoconv</code>, <code>module:htmlparser</code>, <code>module:pdf2json</code>, <code>module:yql</code>, <code>module:natural</code>, <code>module:teacher</code>, <code>module:lda</code>  
+**Requires**: <code>module:enum</code>, <code>module:fs</code>, <code>module:node-xlsx</code>, <code>module:jsdom</code>, <code>module:xml2js</code>, <code>module:unoconv</code>, <code>module:htmlparser</code>, <code>module:pdf2json</code>, <code>module:yql</code>, <code>module:natural</code>, <code>module:teacher</code>, <code>module:lda</code>, <code>module:shp-write</code>, <code>module:shp</code>, <code>module:tokml</code>, <code>module:parse-kml</code>  
 
 * * *
 
