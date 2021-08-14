@@ -10,9 +10,13 @@
     "natural": "^0.6.3",
     "node-nlp": "^3.10.2",
     "node-xlsx": "^0.6.0",
+    "parse-kml": "^1.0.1",
     "pdf2json": "^0.7.1",
     "pdfkit": "^0.11.0",
+    "shp": "0.0.1",
+    "shp-write": "^0.3.2",
     "teacher": "0.0.1",
+    "tokml": "^0.4.0",
     "unoconv": "^0.1.2",
     "wordnet-db": "^3.1.11",
     "xml2js": "^0.4.23",
@@ -21,8 +25,7 @@
   "devDependencies": {},
   "scripts": {
     "test": "node reader.js",
-	"redoc": "jsdoc2md --template README.hbs --files reader.js >README.md; git commit -am 'redoc'; git  push agent master"
-
+    "redoc": "jsdoc2md --template README.hbs --files reader.js >README.md; git commit -am 'redoc'; git  push agent master"
   },
   "repository": {
     "type": "git",

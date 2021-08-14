@@ -20,6 +20,10 @@
 	@requires natural
 	@requires teacher
 	@requires lda
+	@requires shp-write
+	@requires shp
+	@requires tokml
+	@requires parse-kml
 
 	References:
 	// https://towardsdatascience.com/a-comparison-between-spacy-ner-stanford-ner-using-all-us-city-names-c4b6a547290
