@@ -1,6 +1,6 @@
 # READER
 
-**READER** will index (parse, scrape, etc) a variety of document, graphics, presentation, and spreadsheet files 
+Index (parse, scrape, etc) a variety of document, graphics, presentation, and spreadsheet files 
 that were uploaded into Totem,  Ingested text is checked for readibility, indexed to the best using 
 [NLP training rules](/nlprules.view), then reflected into the [file stores](/files.view).
 
