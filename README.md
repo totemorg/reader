@@ -180,20 +180,22 @@ Require, configure and start the **READER**:
 		console.log( err ? "something evil is lurking" : "look mom - Im running!");
 	});
 
-where [its configuration keys](http://totem.zapto.org/shares/prm/reader/index.html) || [COE](https://totem.west.ile.nga.ic.gov/shares/prm/reader/index.html) || [SBU](https://totem.nga.mil/shares/prm/reader/index.html)
-follow the [ENUM deep copy conventions](https://github.com/totemstan/enum) || [COE](https://sc.appdev.proj.coe/acmesds/enum) || [SBU](https://gitlab.west.nga.ic.gov/acmesds/enum).
+where its configuration keys (
+[WWW](http://totem.zapto.org/shares/prm/totem/index.html) 
+[COE](https://totem.west.ile.nga.ic.gov/shares/prm/totem/index.html) 
+[SBU](https://totem.nga.mil/shares/prm/totem/index.html)
+)
+follow the **ENUMS** deep copy conventions (
+[WWW](https://github.com/totemstan/enum) 
+[COE](https://sc.appdev.proj.coe/acmesds/enum) 
+[SBU](https://gitlab.west.nga.ic.gov/acmesds/enum)
+).
 
-## Contacting, Contributing, Following
-
-Feel free to [submit and status TOTEM issues](http://totem.zapto.org/issues.view) || [COE](https://totem.west.ile.nga.ic.gov/issues.view) || [SBU](https://totem.nga.mil/issues.view), [contribute TOTEM notebooks](http://totem.zapto.org/shares/notebooks/) || [COE](https://totem.west.ile.nga.ic.gov/shares/notebooks/) || [SBU](https://totem.nga.mil/shares/notebooks/),
-[inspect TOTEM requirements](http://totem.zapto.org/reqts.view) || [COE](https://totem.west.ile.nga.ic.gov/reqts.view) || [SBU](https://totem.nga.mil/reqts.view), [browse TOTEM holdings](http://totem.zapto.org/) || [COE](https://totem.west.ile.nga.ic.gov/) || [SBU](https://totem.nga.mil/), 
-or [follow TOTEM milestones](http://totem.zapto.org/milestones.view) || [COE](https://totem.west.ile.nga.ic.gov/milestones.view) || [SBU](https://totem.nga.mil/milestones.view).
-
-
-## License
-
-[MIT](LICENSE)
-											   
+## Program Reference
+<details>
+<summary>
+<i>Open/Close</i>
+</summary>
 <a name="module_READER"></a>
 
 ## READER
@@ -204,7 +206,41 @@ for readibility, indexed to the best using NLP training rules.
 Documented in accordance with [jsdoc](https://jsdoc.app/).
 
 **Requires**: <code>module:enum</code>, <code>module:fs</code>, <code>module:node-xlsx</code>, <code>module:jsdom</code>, <code>module:xml2js</code>, <code>module:unoconv</code>, <code>module:htmlparser</code>, <code>module:pdf2json</code>, <code>module:yql</code>, <code>module:natural</code>, <code>module:teacher</code>, <code>module:lda</code>, <code>module:shp-write</code>, <code>module:shp</code>, <code>module:tokml</code>, <code>module:parse-kml</code>  
+</details>
 
+## Contacting, Contributing, Following
+
+Feel free to 
+* submit and status **TOTEM** issues (
+[WWW](http://totem.zapto.org/issues.view) 
+[COE](https://totem.west.ile.nga.ic.gov/issues.view) 
+[SBU](https://totem.nga.mil/issues.view)
+)  
+* contribute to **TOTEM** notebooks (
+[WWW](http://totem.zapto.org/shares/notebooks/) 
+[COE](https://totem.west.ile.nga.ic.gov/shares/notebooks/) 
+[SBU](https://totem.nga.mil/shares/notebooks/)
+)  
+* revise **TOTEM** requirements (
+[WWW](http://totem.zapto.org/reqts.view) 
+[COE](https://totem.west.ile.nga.ic.gov/reqts.view) 
+[SBU](https://totem.nga.mil/reqts.view), 
+)  
+* browse **TOTEM** holdings (
+[WWW](http://totem.zapto.org/) 
+[COE](https://totem.west.ile.nga.ic.gov/) 
+[SBU](https://totem.nga.mil/)
+)  
+* or follow **TOTEM** milestones (
+[WWW](http://totem.zapto.org/milestones.view) 
+[COE](https://totem.west.ile.nga.ic.gov/milestones.view) 
+[SBU](https://totem.nga.mil/milestones.view)
+).
+
+## License
+
+[MIT](LICENSE)
+											   
 * * *
 
 &copy; 2012 ACMESDS
