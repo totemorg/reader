@@ -27,6 +27,7 @@
   "devDependencies": {},
   "scripts": {
     "test": "node reader.js",
+    "relink": "cd node_modules; for f in doc enums geohack; do ln -s ../../$f $f; done",
     "redoc": "jsdoc2md --template README.hbs --files reader.js >README.md; git commit -am 'redoc'; git  push agent master"
   },
   "repository": {

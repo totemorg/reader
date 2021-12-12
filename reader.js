@@ -9,7 +9,6 @@ Documented in accordance with [jsdoc]{@link https://jsdoc.app/}.
 
 @module READER
 
-@requires enum
 @requires fs
 @requires node-xlsx
 @requires jsdom
@@ -25,6 +24,9 @@ Documented in accordance with [jsdoc]{@link https://jsdoc.app/}.
 @requires shp
 @requires tokml
 @requires parse-kml
+@requires teseract
+@requires geohack
+@requires enums
 
 References:
 // https://towardsdatascience.com/a-comparison-between-spacy-ner-stanford-ner-using-all-us-city-names-c4b6a547290
@@ -41,7 +43,7 @@ References:
 // https://sites.cs.ucsb.edu/~wychen/publications/plda-aaim09.pdf
 // https://bcatctr.github.io/paraLDA/
 
-// GPU in spaCy
+// GPU in spaCy supports their ANNs
 // https://support.prodi.gy/t/will-a-gpu-make-training-faster/187
 
 // GPU vs CPU
@@ -101,6 +103,9 @@ const
 	XML2JS = require("xml2js"),				// xml to json parser 	
 	UNO = require('unoconv'),				// File converter/reader
 	{ Copy,Each } = require("enums");		// basic enumerators
+
+const
+	CHIP = require("geohack");
 
 const
 	{ Log, Trace, score, readers, nlps } = READ = module.exports = { 
@@ -213,6 +218,8 @@ const
 		}
 	},
 		
+	/**
+	*/
 	scanner: (doc,topic,threshold,cb) => {
 		const 
 			{random} = Math,
@@ -284,14 +291,12 @@ const
 		cb(score);
 	},
 
+	/**
+	*/
+		
 	readers: {
 		//idop	: idop_Reader,
-		//jpg		: jpg_Reader,
-		//py		: py_Reader,
-		//js		: js_Reader,
-		//db		: db_Reader,
-		//jade	: jade_Reader,
-		//csv: csv_Reader,
+		
 		json	: json_Reader,
 		
 		jpg		: image_Reader,
@@ -315,7 +320,9 @@ const
 		odp		: odp_Reader,
 		ods		: ods_Reader,
 		pdf		: pdf_Reader,
-		xml		: xml_Reader
+		xml		: xml_Reader,
+		
+		aoi		: aoi_Reader
 	},			
 	enabled : true,
 	paths: {
@@ -343,6 +350,32 @@ const
 		"grammar": 2
 	}
 };
+
+function aoi_Reader(path,cb) {
+	
+	sqlThread( sql => {
+		CHIP.workflow(sql, {
+			detName: det.Name.replace(/ /g,"_"),
+			chanName: det.channel,
+			size: det.Feature,
+			pixels: det.Pixels,
+			scale: det.Pack,
+			step: det.SizeStep,
+			range: det.SizeRange,
+			detects: det.Hits,
+			infile: det.infile,
+			outfile: "/rroc/data/giat/swag/jobs",
+			job: {
+				client: req.client,
+				class: "detect",
+				name: det.Name,
+				link: det.Name.tag("a",{href:"/swag.view?goto=Detectors"}),
+				qos: req.profile.QoS,
+				priority: 1
+			}
+		});	
+	});
+}
 
 function xls_Reader(path,cb) {
 	const 

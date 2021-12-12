@@ -205,7 +205,20 @@ Ingested text is checked
 for readibility, indexed to the best using NLP training rules.
 Documented in accordance with [jsdoc](https://jsdoc.app/).
 
-**Requires**: <code>module:enum</code>, <code>module:fs</code>, <code>module:node-xlsx</code>, <code>module:jsdom</code>, <code>module:xml2js</code>, <code>module:unoconv</code>, <code>module:htmlparser</code>, <code>module:pdf2json</code>, <code>module:yql</code>, <code>module:natural</code>, <code>module:teacher</code>, <code>module:lda</code>, <code>module:shp-write</code>, <code>module:shp</code>, <code>module:tokml</code>, <code>module:parse-kml</code>  
+**Requires**: <code>module:fs</code>, <code>module:node-xlsx</code>, <code>module:jsdom</code>, <code>module:xml2js</code>, <code>module:unoconv</code>, <code>module:htmlparser</code>, <code>module:pdf2json</code>, <code>module:yql</code>, <code>module:natural</code>, <code>module:teacher</code>, <code>module:lda</code>, <code>module:shp-write</code>, <code>module:shp</code>, <code>module:tokml</code>, <code>module:parse-kml</code>, <code>module:teseract</code>, <code>module:geohack</code>, <code>module:enums</code>  
+
+* [READER](#module_READER)
+    * [.readers](#module_READER.readers)
+    * [.scanner()](#module_READER.scanner)
+
+<a name="module_READER.readers"></a>
+
+### READER.readers
+**Kind**: static property of [<code>READER</code>](#module_READER)  
+<a name="module_READER.scanner"></a>
+
+### READER.scanner()
+**Kind**: static method of [<code>READER</code>](#module_READER)  
 </details>
 
 ## Contacting, Contributing, Following
