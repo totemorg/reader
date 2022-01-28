@@ -102,16 +102,16 @@ const
 	LDA = require('lda'), 					// NLP via Latent Dirichlet Allocation
 	XML2JS = require("xml2js"),				// xml to json parser 	
 	UNO = require('unoconv'),				// File converter/reader
-	{ Copy,Each } = require("enums");		// basic enumerators
+	  
+	// totem modules
+	{ Copy,Each } = require("../enums"),	// basic enumerators
+	CHIP = require("geohack");				// earth chipper
 
 const
-	CHIP = require("geohack");
-
-const
-	{ Log, Trace, score, readers, nlps } = READ = module.exports = { 
+	{ Log, Trace, Debug, score, readers, nlps } = READ = module.exports = { 
 		
-	Log: (...args) => console.log(">>>reader", args),
-	Trace: (msg,req,res) => "reader".trace(msg,req,res),
+	Log: console.log,
+	Trace: (msg, ...args) => `totem>>>${msg}`.trace( args ),	
 		
 	config: opts => { // initial config to avoid ANLP Array prototype conflicts
 		
@@ -125,23 +125,23 @@ const
 		classifiers.forEach( (Cls,n) => {	// load/reset pretrained classifiers from save path
 			try {
 				var cls = classifiers[n] = Cls.restore(JSON.parse(FS.readFileSync(paths.nlpClasssifier+n)));
-				Log(cls.constructor.name, "load from=", paths.nlpClasssifier);
+				Trace(cls.constructor.name, "load from=", paths.nlpClasssifier);
 			}
 			catch (err) {
 				var cls = classifiers[n] = new Cls();
-				Log(cls.constructor.name, "reset from=", paths.nlpClasssifier);				
+				Trace(cls.constructor.name, "reset from=", paths.nlpClasssifier);				
 			}			
 		});
 
 		if ( sqlThread && 0 )
 			sqlThread( sql => {
-				Log("TRAIN detectors");
+				Trace("TRAIN detectors");
 				sql.query('SELECT `UseCase` AS doc, `Index` AS topic FROM openv.nlprules', (err,rules) => {
 					trainer( err ? [] : rules, true );
 				});
 			});			
 		
-		//Log("define entities");
+		//Trace("define entities");
 		if ( stanford ) stanford.addNamedEntityText(["DTO", "CTO", "hawk", "lieutenant", "police officer", "politician", "officer", "suspect", "windows", "OS"]);
 	},
 		
@@ -171,12 +171,12 @@ const
 
 		if ( stanford ) {
 			rules.forEach( rule => {
-				//Log("add doc", rule );
+				//Trace("add doc", rule );
 				stanford.addDocument( "en", rule.doc, rule.topic );
 			});
 			
 			( async() => {
-				Log("train StanfordCRF");
+				Trace("train StanfordCRF");
 				await stanford.train();
 				stanford.save();
 			}) ();			
@@ -184,13 +184,13 @@ const
 
 		rules.forEach( rule => {
 			classifiers.forEach( cls => {
-				//Log("add doc", cls.constructor.name, rule);
+				//Trace("add doc", cls.constructor.name, rule);
 				cls.addDocument(rule.doc, rule.topic);
 			});
 		});
 
 		classifiers.forEach( (cls,n) => {
-			Log("train", cls.constructor.name);
+			Trace("train", cls.constructor.name);
 			cls.train();
 
 			if ( false && paths.nlpClasssifier ) {
@@ -203,18 +203,18 @@ const
 				trials.forEach( trial => {
 					( async() => {
 						var test = await stanford.process("en", trial );
-						Log("StanfordCRF", trial, "=>", test.intent);
+						Trace("StanfordCRF", trial, "=>", test.intent);
 					}) ();
 				});
 			}
 			
 			classifiers.forEach( (cls,n) => {
 				trials.forEach( trial => {
-					Log(cls.constructor.name, trial, "=>", cls.classify(trial));
+					Trace(cls.constructor.name, trial, "=>", cls.classify(trial));
 				});
 			});
 			
-			Log("LDA", "...", "=>", LDA(trials.join("").fragment(), 2, 5, ["en"]) );
+			Trace("LDA", "...", "=>", LDA(trials.join("").fragment(), 2, 5, ["en"]) );
 		}
 	},
 		
@@ -240,7 +240,7 @@ const
 		//Log( tokens );
 		//Log(frags);
 		
-		Log("SCAN", topic, threshold);
+		Trace("SCAN", topic, threshold);
 		
 		tokens.forEach( word => {
 			score.Readability += spellChecker.isCorrect(word) ? 1 : -2;
@@ -254,7 +254,7 @@ const
 					const name = cls.constructor.name;
 					
 					cls.getClassifications(frag).forEach( (idx,m) => {
-						//Log( name, frag, idx);
+						//Trace( name, frag, idx);
 						//if ( ! (idx.label in score) ) score[idx.label] = 0;
 						if ( idx.label == topic ) if ( idx.value >= threshold ) score.Topic++; 
 						//score[idx.label] += idx.value;
@@ -411,11 +411,11 @@ function xls_Reader(path,cb) {
 }
 
 function nlp_Reader(path,cb) {
-	("file:"+path).fetchFile( buff => score( buff, nlps, metrics => cb( metrics ) ) )
+	path.streamFile( {}, buff => score( buff, nlps, metrics => cb( metrics ) ) );
 }
 								 
 function txt_Reader(path,cb) {
-	("file:"+path).fetchFile( buff => cb( buff ) );
+	path.streamFile( {}, buff => cb( buff ) );
 }
 
 function odp_Reader(path,cb) {	
@@ -529,9 +529,9 @@ function pdf_Reader(path,cb) {
 					var res = JSON.parse(txt);
 					//g( Object.keys(res.formImage) );
 					res.formImage.Pages.forEach( page => {
-						//Log( "page", Object.keys(page) );
+						//Trace( "page", Object.keys(page) );
 						page.Texts.forEach( text => {
-							//Log( "text", Object.keys(text) );
+							//Trace( "text", Object.keys(text) );
 							text.R.forEach( R => {
 								save += R.T + " ";
 							});
@@ -753,7 +753,7 @@ function yql_Reader(path,cb) {
 }
 
 function json_Reader(path,cb) {
-	("file:"+path).fetchFile( buff => cb( buff.parseJSON([])) );
+	path.streamFile( {}, buff => cb( buff) );
 }
 
 function image_Reader(path,cb) {
@@ -911,11 +911,16 @@ function idop_Reader(path,cb) {
 */
 
 switch ( process.argv[2] ) { //< unit tests
+	case "X?":
 	case "?":
-		Log("unit test with 'node reader.js [R1 || R2 || ...]'");
+		Trace("unit test with 'node reader.js [X$ || X1 || ...]'");
 		break;	
 		
-	case "R1":
+	case "X$":
+		Debug(READ);
+		break;
+		
+	case "X1":
 	 	pdf_Reader("./stores/ocrTest01.pdf", txt => Log(txt) );
 		break;
 }
