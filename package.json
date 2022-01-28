@@ -1,6 +1,6 @@
 {
   "name": "reader",
-  "version": "1.0.0",
+  "version": "1.1.0",
   "description": "read and natural-language-parse documents of all kinds",
   "main": "reader.js",
   "dependencies": {
@@ -21,13 +21,13 @@
     "wordnet-db": "^3.1.11",
     "xml2js": "^0.4.23",
     "yql": "^1.0.2",
-	  
-	"enums": "^1.1.0"
+    "enums": "^1.1.0"
   },
   "devDependencies": {},
   "scripts": {
+    "verminor": "npm version minor -f",
+    "vermajor": "npm version major -f",
     "test": "node reader.js",
-    "relink": "cd node_modules; for f in doc enums geohack; do ln -s ../../$f $f; done",
     "redoc": "jsdoc2md --template README.hbs --files reader.js >README.md; git commit -am 'redoc'; git  push agent master"
   },
   "repository": {
