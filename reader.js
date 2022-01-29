@@ -104,14 +104,13 @@ const
 	UNO = require('unoconv'),				// File converter/reader
 	  
 	// totem modules
-	{ Copy,Each } = require("../enums"),	// basic enumerators
-	CHIP = require("geohack");				// earth chipper
+	{ Copy,Each,Log,Debug } = require("../enums"),	// basic enumerators
+	CHIP = require("../geohack");				// earth chipper
 
 const
-	{ Log, Trace, Debug, score, readers, nlps } = READ = module.exports = { 
+	{ Trace, score, readers, nlps } = READ = module.exports = { 
 		
-	Log: console.log,
-	Trace: (msg, ...args) => `totem>>>${msg}`.trace( args ),	
+	Trace: (msg, ...args) => `read>>>${msg}`.trace( args ),	
 		
 	config: opts => { // initial config to avoid ANLP Array prototype conflicts
 		
