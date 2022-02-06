@@ -9,6 +9,8 @@ Documented in accordance with [jsdoc]{@link https://jsdoc.app/}.
 
 @module READER
 
+@requires [enums](https://github.com/totemstan/enum)
+
 @requires fs
 @requires node-xlsx
 @requires jsdom
@@ -26,7 +28,6 @@ Documented in accordance with [jsdoc]{@link https://jsdoc.app/}.
 @requires parse-kml
 @requires teseract
 @requires geohack
-@requires enums
 
 References:
 // https://towardsdatascience.com/a-comparison-between-spacy-ner-stanford-ner-using-all-us-city-names-c4b6a547290

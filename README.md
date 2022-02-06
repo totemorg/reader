@@ -1,4 +1,4 @@
-# READER
+# READER [WWW](https://github.com/totemstan/reader)  [COE](https://sc.appdev.proj.coe/acmesds/reader)  [SBU](https://gitlab.west.nga.ic.gov/acmesds/reader)
 
 Index (parse, scrape, etc) a variety of document, graphics, presentation, and spreadsheet files 
 that were uploaded into Totem,  Ingested text is checked for readibility, indexed to the best using 
@@ -156,10 +156,6 @@ that were uploaded into Totem,  Ingested text is checked for readibility, indexe
 
 Clone [**READER** file readers](https://github.com/totemstan/reader) || [COE](https://sc.appdev.proj.coe/acmesds/reader) || [SBU](https://gitlab.west.nga.ic.gov/acmesds/reader) into your PROJECT/reader folder.   
 
-## Requires
-
-[ENUM standard enumerators](https://github.com/totemstan/enum) || [COE](https://sc.appdev.proj.coe/acmesds/enum) || [SBU](https://gitlab.west.nga.ic.gov/acmesds/enum).   
-
 ## Manage 
 
 	npm test [ ? || R1 || R2 || ...]	# Unit test
@@ -205,7 +201,7 @@ Ingested text is checked
 for readibility, indexed to the best using NLP training rules.
 Documented in accordance with [jsdoc](https://jsdoc.app/).
 
-**Requires**: <code>module:fs</code>, <code>module:node-xlsx</code>, <code>module:jsdom</code>, <code>module:xml2js</code>, <code>module:unoconv</code>, <code>module:htmlparser</code>, <code>module:pdf2json</code>, <code>module:yql</code>, <code>module:natural</code>, <code>module:teacher</code>, <code>module:lda</code>, <code>module:shp-write</code>, <code>module:shp</code>, <code>module:tokml</code>, <code>module:parse-kml</code>, <code>module:teseract</code>, <code>module:geohack</code>, <code>module:enums</code>  
+**Requires**: <code>module:[enums](https://github.com/totemstan/enum)</code>, <code>module:fs</code>, <code>module:node-xlsx</code>, <code>module:jsdom</code>, <code>module:xml2js</code>, <code>module:unoconv</code>, <code>module:htmlparser</code>, <code>module:pdf2json</code>, <code>module:yql</code>, <code>module:natural</code>, <code>module:teacher</code>, <code>module:lda</code>, <code>module:shp-write</code>, <code>module:shp</code>, <code>module:tokml</code>, <code>module:parse-kml</code>, <code>module:teseract</code>, <code>module:geohack</code>  
 
 * [READER](#module_READER)
     * [.readers](#module_READER.readers)
