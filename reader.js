@@ -105,7 +105,7 @@ const
 	UNO = require('unoconv'),				// File converter/reader
 	  
 	// totem modules
-	{ Copy,Each,Log,Debug } = require("../enums"),	// basic enumerators
+	{ Copy,Each,Log,Debug,sqlThread } = require("../enums"),	// basic enumerators
 	CHIP = require("../geohack");				// earth chipper
 
 const
@@ -118,7 +118,7 @@ const
 		//if (opts) for (var key in opts) READ[key] = opts[key];
 		if (opts) Copy(opts,READ,".");
 
-		const { classifiers, trainer, lexicon, sqlThread, paths, stanford, PorterStemmer } = READ;
+		const { classifiers, trainer, lexicon, paths, stanford, PorterStemmer } = READ;
 	
 		//READ.tagger = new ANLP.BrillPOSTagger(lexicon,rules);
 
@@ -133,7 +133,7 @@ const
 			}			
 		});
 
-		if ( sqlThread && 0 )
+		if ( false)
 			sqlThread( sql => {
 				Trace("TRAIN detectors");
 				sql.query('SELECT `UseCase` AS doc, `Index` AS topic FROM openv.nlprules', (err,rules) => {
