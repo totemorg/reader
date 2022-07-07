@@ -906,23 +906,12 @@ function idop_Reader(path,cb) {
 
 //=============== unit tests
 
-/**
-@class READER.Unit_Tests_Use_Cases
-*/
-
-switch ( process.argv[2] ) { //< unit tests
-	case "X?":
-	case "?":
-		Trace("unit test with 'node reader.js [X$ || X1 || ...]'");
-		break;	
+Debug("reader", {	// unit test
+	$: READ,
 		
-	case "X$":
-		Debug(READ);
-		break;
-		
-	case "X1":
+	X1: () => {
 	 	pdf_Reader("./stores/ocrTest01.pdf", txt => Log(txt) );
-		break;
-}
+	}
+});
 
 // UNCLASSIFIED
