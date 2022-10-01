@@ -105,7 +105,7 @@ const
 	UNO = require('unoconv'),				// File converter/reader
 	  
 	// totem modules
-	{ Copy,Each,Log,Debug,sqlThread } = require("../enums"),	// basic enumerators
+	{ Copy,Each,Log,Start,sqlThread } = require("../enums"),	// basic enumerators
 	CHIP = require("../geohack");				// earth chipper
 
 const
@@ -906,7 +906,7 @@ function idop_Reader(path,cb) {
 
 //=============== unit tests
 
-Debug("reader", {	// unit test
+Start("reader", {	// unit test
 	$: READ,
 		
 	X1: () => {
