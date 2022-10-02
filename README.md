@@ -154,13 +154,18 @@ that were uploaded into Totem,  Ingested text is checked for readibility, indexe
 
 ## Installation
 
-Clone [**READER** file readers](https://github.com/totem-man/reader) || [COE](https://sc.appdev.proj.coe/acmesds/reader) || [SBU](https://gitlab.west.nga.ic.gov/acmesds/reader) into your PROJECT/reader folder.   
+Clone **READER** and its dependencies from one of its REPOs:
 
-## Manage 
+	cd MYPROJECT
+	git clone REPO/totem-man/reader
+	git clone REPO/totem-man/enums
 
-	npm test [ ? || R1 || R2 || ...]	# Unit test
-	npm run [ edit || start ]			# Configure environment
-	npm run [ prmprep || prmload ]		# Revise PRM
+To start and manage **READER**: 
+
+	npm run start [ ? | $ | ...]	# Unit test
+	npm run verminor				# Roll minor version
+	npm run vermajor				# Roll major version
+	npm run redoc					# Regen documentation
 	
 ## Usage
 
