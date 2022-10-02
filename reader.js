@@ -9,7 +9,7 @@ Documented in accordance with [jsdoc]{@link https://jsdoc.app/}.
 
 @module READER
 
-@requires [enums](https://github.com/totemstan/enum)
+@requires [enums](https://github.com/totemstan/enums)
 
 @requires fs
 @requires node-xlsx
@@ -105,7 +105,7 @@ const
 	UNO = require('unoconv'),				// File converter/reader
 	  
 	// totem modules
-	{ Copy,Each,Log,Start,sqlThread } = require("../enums"),	// basic enumerators
+	{ Copy,Each,Log,Start,sqlThread } = require("./enums"),	// basic enumerators
 	CHIP = require("../geohack");				// earth chipper
 
 const
