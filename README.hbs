@@ -152,16 +152,9 @@ that were uploaded into Totem,  Ingested text is checked for readibility, indexe
 	xlt5     - Microsoft Excel 5.0 Template [.xlt]
 	xlt95    - Microsoft Excel 95 Template [.xlt]
 
-## Installation
+## Manage
 
-Clone **READER** and its dependencies from one of its REPOs:
-
-	cd MYPROJECT
-	git clone REPO/totem-man/reader
-	git clone REPO/totem-man/enums
-
-To start and manage **READER**: 
-
+	npm install @totemstan/reader	# install
 	npm run start [ ? | $ | ...]	# Unit test
 	npm run verminor				# Roll minor version
 	npm run vermajor				# Roll major version
@@ -171,17 +164,15 @@ To start and manage **READER**:
 
 Require, configure and start the **READER**:
 	
-	var READ = require("reader");
-	
-	READ.config({
+	require("reader").config({
 		key: value, 						// set key
 		"key.key": value, 					// indexed set
 		"key.key.": value					// indexed append
-	}, function (err) {
+	}, err => {
 		console.log( err ? "something evil is lurking" : "look mom - Im running!");
 	});
 
-where configuration keys follow [ENUMS deep copy conventions](https://github.com/totem-man/enums)
+where configuration keys follow [ENUMS deep copy conventions](https://github.com/totem-man/enums).
 
 
 ## Program Reference

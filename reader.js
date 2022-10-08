@@ -105,8 +105,8 @@ const
 	UNO = require('unoconv'),				// File converter/reader
 	  
 	// totem modules
-	{ Copy,Each,Log,Start,sqlThread } = require("./enums"),	// basic enumerators
-	CHIP = require("../geohack");				// earth chipper
+	{ Copy,Each,Log,Start,sqlThread } = require("@totemstan/enums");	// basic enumerators
+	//CHIP = require("../geohack");				// earth chipper
 
 const
 	{ Trace, score, readers, nlps } = READ = module.exports = { 
