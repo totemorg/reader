@@ -9,25 +9,26 @@ Documented in accordance with [jsdoc]{@link https://jsdoc.app/}.
 
 @module READER
 
-@requires [enums](https://github.com/totemstan/enums)
+@requires [enums](https://github.com/totemorg/enums)
+@requires [geohack](https://github.com/totemorg/geohack)
 
-@requires fs
-@requires node-xlsx
-@requires jsdom
-@requires xml2js
-@requires unoconv
-@requires htmlparser
-@requires pdf2json
-@requires yql
-@requires natural
-@requires teacher
-@requires lda
-@requires shp-write
-@requires shp
-@requires tokml
-@requires parse-kml
-@requires teseract
-@requires geohack
+@requires [fs](https://nodejs.org/docs/latest/api/)
+
+@requires [node-xlsx](https://www.npmjs.com/package/mathjs)
+@requires [jsdom](https://www.npmjs.com/package/jsdom)
+@requires [xml2js](https://www.npmjs.com/package/xml2js)
+@requires [unoconv](https://www.npmjs.com/package/unoconv)
+@requires [htmlparser](https://www.npmjs.com/package/htmlparser)
+@requires [pdf2json](https://www.npmjs.com/package/pdf2json)
+@requires [yql](https://www.npmjs.com/package/yql)
+@requires [natural](https://www.npmjs.com/package/natural)
+@requires [teacher](https://www.npmjs.com/package/teacher)
+@requires [lda](https://www.npmjs.com/package/lda)
+@requires [shp-write](https://www.npmjs.com/package/shp-write)
+@requires [shp](https://www.npmjs.com/package/shp)
+@requires [tokml](https://www.npmjs.com/package/tokml)
+@requires [parse-kml](https://www.npmjs.com/package/parse-kml)
+@requires [teseract](https://www.npmjs.com/package/teseract)
 
 References:
 // https://towardsdatascience.com/a-comparison-between-spacy-ner-stanford-ner-using-all-us-city-names-c4b6a547290
@@ -105,7 +106,7 @@ const
 	UNO = require('unoconv'),				// File converter/reader
 	  
 	// totem modules
-	{ Copy,Each,Log,Start,sqlThread } = require("@totemstan/enums");	// basic enumerators
+	{ Copy,Each,Log,Start,sqlThread } = require("./enums");	// basic enumerators
 	//CHIP = require("../geohack");				// earth chipper
 
 const
