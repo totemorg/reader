@@ -1,4 +1,4 @@
-# [READER](https://github.com/totem-man/reader)
+# [READER](https://www.npmjs.com/package/@totemorg/reader)
 
 Index (parse, scrape, etc) a variety of document, graphics, presentation, and spreadsheet files 
 that were uploaded into Totem,  Ingested text is checked for readibility, indexed to the best using 
@@ -154,7 +154,7 @@ that were uploaded into Totem,  Ingested text is checked for readibility, indexe
 
 ## Manage
 
-	npm install @totemstan/reader	# install
+	npm install @totemorg/reader	# install
 	npm run start [ ? | $ | ...]	# Unit test
 	npm run verminor				# Roll minor version
 	npm run vermajor				# Roll major version
@@ -162,7 +162,7 @@ that were uploaded into Totem,  Ingested text is checked for readibility, indexe
 	
 ## Usage
 
-Require, configure and start the **READER**:
+Acquire **READER** and optionally configure:
 	
 	require("reader").config({
 		key: value, 						// set key
@@ -172,7 +172,7 @@ Require, configure and start the **READER**:
 		console.log( err ? "something evil is lurking" : "look mom - Im running!");
 	});
 
-where configuration keys follow [ENUMS deep copy conventions](https://github.com/totem-man/enums).
+where configuration keys follow [ENUMS deep copy conventions](https://www.npmjs.com/package/@totemorg/enums).
 
 
 ## Program Reference
@@ -189,7 +189,7 @@ Ingested text is checked
 for readibility, indexed to the best using NLP training rules.
 Documented in accordance with [jsdoc](https://jsdoc.app/).
 
-**Requires**: <code>module:[enums](https://github.com/totemstan/enums)</code>, <code>module:fs</code>, <code>module:node-xlsx</code>, <code>module:jsdom</code>, <code>module:xml2js</code>, <code>module:unoconv</code>, <code>module:htmlparser</code>, <code>module:pdf2json</code>, <code>module:yql</code>, <code>module:natural</code>, <code>module:teacher</code>, <code>module:lda</code>, <code>module:shp-write</code>, <code>module:shp</code>, <code>module:tokml</code>, <code>module:parse-kml</code>, <code>module:teseract</code>, <code>module:geohack</code>  
+**Requires**: <code>module:[enums](https://github.com/totemorg/enums)</code>, <code>module:[geohack](https://github.com/totemorg/geohack)</code>, <code>module:[fs](https://nodejs.org/docs/latest/api/)</code>, <code>module:[node-xlsx](https://www.npmjs.com/package/mathjs)</code>, <code>module:[jsdom](https://www.npmjs.com/package/jsdom)</code>, <code>module:[xml2js](https://www.npmjs.com/package/xml2js)</code>, <code>module:[unoconv](https://www.npmjs.com/package/unoconv)</code>, <code>module:[htmlparser](https://www.npmjs.com/package/htmlparser)</code>, <code>module:[pdf2json](https://www.npmjs.com/package/pdf2json)</code>, <code>module:[yql](https://www.npmjs.com/package/yql)</code>, <code>module:[natural](https://www.npmjs.com/package/natural)</code>, <code>module:[teacher](https://www.npmjs.com/package/teacher)</code>, <code>module:[lda](https://www.npmjs.com/package/lda)</code>, <code>module:[shp-write](https://www.npmjs.com/package/shp-write)</code>, <code>module:[shp](https://www.npmjs.com/package/shp)</code>, <code>module:[tokml](https://www.npmjs.com/package/tokml)</code>, <code>module:[parse-kml](https://www.npmjs.com/package/parse-kml)</code>, <code>module:[teseract](https://www.npmjs.com/package/teseract)</code>  
 
 * [READER](#module_READER)
     * [.readers](#module_READER.readers)
