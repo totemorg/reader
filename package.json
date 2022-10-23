@@ -4,7 +4,7 @@
   "description": "read and natural-language-parse documents of all kinds",
   "main": "reader.js",
   "dependencies": {
-    "@totemorg/enums": "^1.21.0",
+    "@totemorg/enums": "^1.27.0",
     "jsdom": "^7.2.2",
     "lda": "^0.1.9",
     "lodash": "^4.17.15",

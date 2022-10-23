@@ -9,8 +9,8 @@ Documented in accordance with [jsdoc]{@link https://jsdoc.app/}.
 
 @module READER
 
-@requires [enums](https://github.com/totemorg/enums)
-@requires [geohack](https://github.com/totemorg/geohack)
+@requires [enums](https://www.npmjs.com/package/enums)
+@requires [geohack](https://www.npmjs.com/package/geohack)
 
 @requires [fs](https://nodejs.org/docs/latest/api/)
 
@@ -106,7 +106,7 @@ const
 	UNO = require('unoconv'),				// File converter/reader
 	  
 	// totem modules
-	{ Copy,Each,Log,Start,sqlThread } = require("./enums");	// basic enumerators
+	{ Copy,Each,Log,Start,sqlThread } = require("@totemorg/enums");	// basic enumerators
 	//CHIP = require("../geohack");				// earth chipper
 
 const
